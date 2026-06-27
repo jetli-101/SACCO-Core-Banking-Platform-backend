@@ -56,6 +56,9 @@ public class User extends BaseEntity {
     @Column(name = "last_login_at")
     private OffsetDateTime lastLoginAt;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
     @JsonIgnore
     public boolean isEnabled() {
         return status == UserStatus.ACTIVE;
