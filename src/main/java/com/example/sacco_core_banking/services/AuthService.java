@@ -19,6 +19,7 @@ import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.Sacco;
 import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.entities.UserRole;
+import com.example.sacco_core_banking.enums.OtpPurpose;
 import com.example.sacco_core_banking.enums.RoleName;
 import com.example.sacco_core_banking.enums.UserStatus;
 import com.example.sacco_core_banking.repositories.MemberRepository;
@@ -51,6 +52,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
+    private final OtpService otpService;
 
     public RegisterResponse register(RegisterMemberRequest request) {
         Sacco sacco = saccoRepository.findByRegistrationNumber(request.getSaccoCode())
@@ -110,12 +113,25 @@ public class AuthService {
 
         auditLogService.record(user, "MEMBER_REGISTERED", "Member", member.getId());
 
+        emailService.sendWelcomeEmail(user.getEmail(), member.getFirstName());
+        otpService.generateAndSendOtp(user, OtpPurpose.REGISTRATION);
+
         return RegisterResponse.builder()
                 .userId(user.getId())
                 .memberId(member.getId())
                 .email(user.getEmail())
                 .status(user.getStatus().name())
                 .build();
+    }
+
+    public void resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("No account found for email: " + email));
+        otpService.generateAndSendOtp(user, OtpPurpose.REGISTRATION);
+    }
+
+    public void verifyOtp(String email, String code) {
+        otpService.verifyOtp(email, code, OtpPurpose.REGISTRATION);
     }
 
     public AuthResponse login(LoginRequest request) {
