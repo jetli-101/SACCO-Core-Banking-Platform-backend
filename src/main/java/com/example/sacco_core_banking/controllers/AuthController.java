@@ -7,6 +7,8 @@ import com.example.sacco_core_banking.dto.auth.LoginRequest;
 import com.example.sacco_core_banking.dto.auth.RefreshTokenRequest;
 import com.example.sacco_core_banking.dto.auth.RegisterMemberRequest;
 import com.example.sacco_core_banking.dto.auth.RegisterResponse;
+import com.example.sacco_core_banking.dto.auth.SendOtpRequest;
+import com.example.sacco_core_banking.dto.auth.VerifyOtpRequest;
 import com.example.sacco_core_banking.services.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +35,20 @@ public class AuthController {
         RegisterResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Registration received. Your account is pending approval."));
+    }
+
+    @PostMapping("/send-otp")
+    @Operation(summary = "Send/resend OTP", description = "Emails a fresh verification code, invalidating any previously issued one.")
+    public ResponseEntity<ApiResponse<Void>> sendOtp(@Valid @RequestBody SendOtpRequest request) {
+        authService.resendOtp(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success(null, "Verification code sent"));
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Verify OTP", description = "Confirms the emailed code and marks the account's email as verified.")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        authService.verifyOtp(request.getEmail(), request.getOtp());
+        return ResponseEntity.ok(ApiResponse.success(null, "Email verified successfully"));
     }
 
     @PostMapping("/login")

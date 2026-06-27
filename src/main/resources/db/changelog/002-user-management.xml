@@ -301,4 +301,41 @@
         <addUniqueConstraint tableName="smoothsurf_sacco_role_permissions" columnNames="role_id, module_id, permission_id" constraintName="uq_role_permissions"/>
     </changeSet>
 
+    <changeSet id="17" author="sacco-dev">
+        <addColumn tableName="smoothsurf_sacco_users">
+            <column name="email_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="18" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_otp_tokens">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_otp_tokens_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="code" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purpose" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="used" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <createIndex tableName="smoothsurf_sacco_otp_tokens" indexName="idx_otp_tokens_user_purpose">
+            <column name="user_id"/>
+            <column name="purpose"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>
