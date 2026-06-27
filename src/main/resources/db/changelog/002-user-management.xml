@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="2" author="sacco-dev">
+        <addColumn tableName="smoothsurf_sacco_saccos">
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="3" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_roles">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="4" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_users">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sacco_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_users_sacco" references="smoothsurf_sacco_saccos(id)"/>
+            </column>
+            <column name="username" type="VARCHAR(100)">
+                <constraints unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="phone" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_login_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <createIndex tableName="smoothsurf_sacco_users" indexName="idx_users_sacco_id">
+            <column name="sacco_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="5" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_members">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sacco_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_members_sacco" references="smoothsurf_sacco_saccos(id)"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_members_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="member_number" type="VARCHAR(50)">
+                <constraints unique="true"/>
+            </column>
+            <column name="national_id" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_of_birth" type="DATE"/>
+            <column name="gender" type="VARCHAR(10)"/>
+            <column name="occupation" type="VARCHAR(150)"/>
+            <column name="kra_pin" type="VARCHAR(20)"/>
+            <column name="employer" type="VARCHAR(150)"/>
+            <column name="county" type="VARCHAR(100)"/>
+            <column name="constituency" type="VARCHAR(100)"/>
+            <column name="ward" type="VARCHAR(100)"/>
+            <column name="postal_address" type="VARCHAR(255)"/>
+            <column name="physical_address" type="VARCHAR(255)"/>
+            <column name="passport_photo_url" type="TEXT"/>
+            <column name="signature_url" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <addUniqueConstraint tableName="smoothsurf_sacco_members" columnNames="sacco_id, national_id" constraintName="uq_members_sacco_national_id"/>
+    </changeSet>
+
+    <changeSet id="6" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_next_of_kin">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_next_of_kin_member" references="smoothsurf_sacco_members(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="relationship" type="VARCHAR(50)"/>
+            <column name="phone" type="VARCHAR(20)"/>
+            <column name="id_number" type="VARCHAR(50)"/>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="7" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_member_approvals">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_member_approvals_member" references="smoothsurf_sacco_members(id)"/>
+            </column>
+            <column name="approved_by_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_member_approvals_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="decision" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="comments" type="TEXT"/>
+            <column name="decided_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="8" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_audit_logs">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="true" foreignKeyName="fk_audit_logs_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="action" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_name" type="VARCHAR(100)"/>
+            <column name="entity_id" type="UUID"/>
+            <column name="ip_address" type="VARCHAR(64)"/>
+            <column name="device" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <createIndex tableName="smoothsurf_sacco_audit_logs" indexName="idx_audit_logs_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="9" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_user_roles">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_roles_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="role_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_roles_role" references="smoothsurf_sacco_roles(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <addUniqueConstraint tableName="smoothsurf_sacco_user_roles" columnNames="user_id, role_id" constraintName="uq_user_roles"/>
+    </changeSet>
+
+    <changeSet id="10" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_module_types">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="text_id" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="order_no" type="INT" defaultValueNumeric="0"/>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="11" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_modules">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(150)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="text_id" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="url_path" type="VARCHAR(255)"/>
+            <column name="icon" type="VARCHAR(100)"/>
+            <column name="order_no" type="INT" defaultValueNumeric="0"/>
+            <column name="module_type_id" type="UUID">
+                <constraints foreignKeyName="fk_modules_module_type" references="smoothsurf_sacco_module_types(id)"/>
+            </column>
+            <column name="parent_id" type="UUID">
+                <constraints foreignKeyName="fk_modules_parent" references="smoothsurf_sacco_modules(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="12" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_role_modules">
+            <column name="role_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_role_modules_role" references="smoothsurf_sacco_roles(id)"/>
+            </column>
+            <column name="module_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_role_modules_module" references="smoothsurf_sacco_modules(id)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="smoothsurf_sacco_role_modules" columnNames="role_id, module_id" constraintName="pk_role_modules"/>
+    </changeSet>
+
+    <changeSet id="13" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_user_module_permissions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_module_permissions_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="module_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_module_permissions_module" references="smoothsurf_sacco_modules(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <addUniqueConstraint tableName="smoothsurf_sacco_user_module_permissions" columnNames="user_id, module_id" constraintName="uq_user_module_permissions"/>
+    </changeSet>
+
+    <changeSet id="14" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_permissions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="15" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_user_module_permission_values">
+            <column name="user_module_permission_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ump_values_ump" references="smoothsurf_sacco_user_module_permissions(id)"/>
+            </column>
+            <column name="permission_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ump_values_permission" references="smoothsurf_sacco_permissions(id)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="smoothsurf_sacco_user_module_permission_values" columnNames="user_module_permission_id, permission_id" constraintName="pk_ump_values"/>
+    </changeSet>
+
+    <changeSet id="16" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_role_permissions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="role_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_role_permissions_role" references="smoothsurf_sacco_roles(id)"/>
+            </column>
+            <column name="module_id" type="UUID">
+                <constraints foreignKeyName="fk_role_permissions_module" references="smoothsurf_sacco_modules(id)"/>
+            </column>
+            <column name="permission_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_role_permissions_permission" references="smoothsurf_sacco_permissions(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <addUniqueConstraint tableName="smoothsurf_sacco_role_permissions" columnNames="role_id, module_id, permission_id" constraintName="uq_role_permissions"/>
+    </changeSet>
+
+</databaseChangeLog>
