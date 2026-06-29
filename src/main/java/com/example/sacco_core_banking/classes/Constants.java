@@ -7,6 +7,7 @@ public interface Constants {
     String ADMIN_PATH = API_BASE_PATH + "/admin";
     String USERS_PATH = API_BASE_PATH + "/users";
     String ROLES_PATH = API_BASE_PATH + "/roles";
+    String USER_GROUPS_PATH = API_BASE_PATH + "/user-groups";
     String PERMISSIONS_PATH = API_BASE_PATH + "/permissions";
     String USER_ROLES_PATH = API_BASE_PATH + "/user-roles";
     String ROLE_PERMISSIONS_PATH = API_BASE_PATH + "/role-permissions";

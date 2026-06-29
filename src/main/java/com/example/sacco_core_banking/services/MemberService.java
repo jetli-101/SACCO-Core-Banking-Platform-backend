@@ -18,18 +18,20 @@ import com.example.sacco_core_banking.enums.UserStatus;
 import com.example.sacco_core_banking.repositories.MemberRepository;
 import com.example.sacco_core_banking.repositories.NextOfKinRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class MemberService {
 
-    private final MemberRepository memberRepository;
-    private final NextOfKinRepository nextOfKinRepository;
-    private final UserRoleRepository userRoleRepository;
+    @Autowired
+    private MemberRepository memberRepository;
+    @Autowired
+    private NextOfKinRepository nextOfKinRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     public MemberResponse getMyProfile(User currentUser) {
         Member member = memberRepository.findByUserId(currentUser.getId())

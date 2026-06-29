@@ -1,4 +1,4 @@
-package com.example.sacco_core_banking.dto.role;
+package com.example.sacco_core_banking.dto.usergroup;
 
 import java.util.UUID;
 
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoleResponse {
+public class UserGroupResponse {
     private UUID id;
     private String name;
     private String description;

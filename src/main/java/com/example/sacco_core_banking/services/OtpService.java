@@ -10,7 +10,7 @@ import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.enums.OtpPurpose;
 import com.example.sacco_core_banking.repositories.OtpTokenRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
  * unused code for the same user+purpose, so only the most recently issued code works.
  */
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class OtpService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final OtpTokenRepository otpTokenRepository;
-    private final UserRepository userRepository;
-    private final EmailService emailService;
+    @Autowired
+    private OtpTokenRepository otpTokenRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private EmailService emailService;
 
     @Value("${app.otp.length}")
     private int otpLength;

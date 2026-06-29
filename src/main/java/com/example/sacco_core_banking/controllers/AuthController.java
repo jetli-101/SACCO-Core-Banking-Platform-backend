@@ -13,7 +13,7 @@ import com.example.sacco_core_banking.services.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(Constants.AUTH_PATH)
-@RequiredArgsConstructor
 @Tag(name = "Auth", description = "Member registration, login, and token refresh")
 public class AuthController {
 
-    private final AuthService authService;
+    @Autowired
+    private AuthService authService;
 
     @PostMapping("/register")
     @Operation(summary = "Register a member", description = "Creates a PENDING member account awaiting admin approval.")

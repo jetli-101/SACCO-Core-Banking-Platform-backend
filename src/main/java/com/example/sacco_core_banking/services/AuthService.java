@@ -28,7 +28,7 @@ import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.SaccoRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,22 +38,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class AuthService {
 
-    private final SaccoRepository saccoRepository;
-    private final RoleRepository roleRepository;
-    private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final MemberRepository memberRepository;
-    private final NextOfKinRepository nextOfKinRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
-    private final AuditLogService auditLogService;
-    private final EmailService emailService;
-    private final OtpService otpService;
+    @Autowired
+    private SaccoRepository saccoRepository;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    @Autowired
+    private MemberRepository memberRepository;
+    @Autowired
+    private NextOfKinRepository nextOfKinRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private AuthenticationManager authenticationManager;
+    @Autowired
+    private JwtService jwtService;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private OtpService otpService;
 
     public RegisterResponse register(RegisterMemberRequest request) {
         Sacco sacco = saccoRepository.findByRegistrationNumber(request.getSaccoCode())

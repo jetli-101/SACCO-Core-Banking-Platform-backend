@@ -15,19 +15,22 @@ import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
 import com.example.sacco_core_banking.repositories.PermissionRepository;
 import com.example.sacco_core_banking.repositories.RolePermissionRepository;
 import com.example.sacco_core_banking.repositories.RoleRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class RolePermissionService {
 
-    private final RolePermissionRepository rolePermissionRepository;
-    private final RoleRepository roleRepository;
-    private final ModuleRegisterRepository moduleRegisterRepository;
-    private final PermissionRepository permissionRepository;
+    @Autowired
+    private RolePermissionRepository rolePermissionRepository;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private ModuleRegisterRepository moduleRegisterRepository;
+    @Autowired
+    private PermissionRepository permissionRepository;
 
     public RolePermissionResponse createRolePermission(RolePermissionRequest request) {
         RolePermission rolePermission = new RolePermission();

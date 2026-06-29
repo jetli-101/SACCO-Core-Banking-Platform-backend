@@ -17,20 +17,24 @@ import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
 import com.example.sacco_core_banking.repositories.PermissionRepository;
 import com.example.sacco_core_banking.repositories.UserModulePermissionRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class UserModulePermissionService {
 
-    private final UserModulePermissionRepository userModulePermissionRepository;
-    private final UserRepository userRepository;
-    private final ModuleRegisterRepository moduleRegisterRepository;
-    private final PermissionRepository permissionRepository;
-    private final AuditLogService auditLogService;
+    @Autowired
+    private UserModulePermissionRepository userModulePermissionRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ModuleRegisterRepository moduleRegisterRepository;
+    @Autowired
+    private PermissionRepository permissionRepository;
+    @Autowired
+    private AuditLogService auditLogService;
 
     public List<UserModulePermissionResponse> listForUser(UUID userId, UUID requesterSaccoId) {
         User user = findUserInSacco(userId, requesterSaccoId);

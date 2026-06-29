@@ -10,16 +10,16 @@ import com.example.sacco_core_banking.dto.permission.PermissionRequest;
 import com.example.sacco_core_banking.dto.permission.PermissionResponse;
 import com.example.sacco_core_banking.entities.Permission;
 import com.example.sacco_core_banking.repositories.PermissionRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class PermissionService {
 
-    private final PermissionRepository permissionRepository;
+    @Autowired
+    private PermissionRepository permissionRepository;
 
     public List<PermissionResponse> findAll() {
         return permissionRepository.findAll().stream()

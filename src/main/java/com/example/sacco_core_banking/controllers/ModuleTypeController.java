@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,11 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = Constants.API_BASE_PATH + "/module-types")
-@RequiredArgsConstructor
 @Tag(name = "Module Types", description = "Module Types API end-points.")
 public class ModuleTypeController {
 
-    private final ModuleTypeService moduleTypeService;
+    @Autowired
+    private ModuleTypeService moduleTypeService;
 
     @GetMapping(value = "/all")
     @Operation(summary = "List Module Types", description = "This method is used to get all module types.")

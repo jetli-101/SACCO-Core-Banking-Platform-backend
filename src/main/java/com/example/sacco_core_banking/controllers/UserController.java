@@ -17,7 +17,7 @@ import com.example.sacco_core_banking.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,13 +36,14 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping(Constants.USERS_PATH)
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('SYSTEM_ADMINISTRATOR')")
 @Tag(name = "Users", description = "Staff/member account listing, creation, and status management")
 public class UserController {
 
-    private final UserService userService;
-    private final CurrentUser currentUser;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private CurrentUser currentUser;
 
     @GetMapping
     @Operation(summary = "List users", description = "Lists every account in the caller's Sacco.")

@@ -11,7 +11,7 @@ import com.example.sacco_core_banking.services.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,12 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(Constants.MEMBERS_PATH)
-@RequiredArgsConstructor
 @Tag(name = "Members", description = "Member directory and self-service profile for the logged-in member")
 public class MemberController {
 
-    private final MemberService memberService;
-    private final CurrentUser currentUser;
+    @Autowired
+    private MemberService memberService;
+    @Autowired
+    private CurrentUser currentUser;
 
     @GetMapping
     @Operation(summary = "List members", description = "Lists every SACCO member in the caller's Sacco — the member directory.")

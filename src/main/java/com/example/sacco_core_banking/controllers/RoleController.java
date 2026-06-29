@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import com.example.sacco_core_banking.classes.Constants;
 import com.example.sacco_core_banking.dto.ApiResponse;
+import com.example.sacco_core_banking.dto.common.AssignMemberRequest;
+import com.example.sacco_core_banking.dto.common.GroupMemberResponse;
 import com.example.sacco_core_banking.dto.module.ModuleResponse;
 import com.example.sacco_core_banking.dto.role.RoleRequest;
 import com.example.sacco_core_banking.dto.role.RoleResponse;
@@ -13,7 +15,7 @@ import com.example.sacco_core_banking.services.RoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,12 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(Constants.ROLES_PATH)
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('SYSTEM_ADMINISTRATOR')")
 @Tag(name = "Roles", description = "Role group catalogue")
 public class RoleController {
 
-    private final RoleService roleService;
+    @Autowired
+    private RoleService roleService;
 
     @GetMapping
     @Operation(summary = "List roles", description = "Returns every role group in the catalogue.")
@@ -85,5 +87,24 @@ public class RoleController {
     public ResponseEntity<ApiResponse<RoleResponse>> unassignModulesFromRole(@PathVariable UUID roleId,
             @RequestBody Set<UUID> moduleIds) {
         return ResponseEntity.ok(ApiResponse.success(roleService.unassignModulesFromRole(roleId, moduleIds), "Modules unassigned"));
+    }
+
+    @GetMapping("/{roleId}/members")
+    @Operation(summary = "List a role's members", description = "Lists every user currently assigned this role.")
+    public ResponseEntity<ApiResponse<List<GroupMemberResponse>>> listMembers(@PathVariable UUID roleId) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.listMembers(roleId), "Members retrieved"));
+    }
+
+    @PostMapping("/{roleId}/members")
+    @Operation(summary = "Assign a member to a role")
+    public ResponseEntity<ApiResponse<GroupMemberResponse>> addMember(@PathVariable UUID roleId, @Valid @RequestBody AssignMemberRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(roleService.addMember(roleId, request), "Member assigned"));
+    }
+
+    @DeleteMapping("/{roleId}/members/{userId}")
+    @Operation(summary = "Remove a member from a role")
+    public ResponseEntity<ApiResponse<Void>> removeMember(@PathVariable UUID roleId, @PathVariable UUID userId) {
+        roleService.removeMember(roleId, userId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Member removed"));
     }
 }
