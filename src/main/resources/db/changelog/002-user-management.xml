@@ -338,4 +338,47 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="19" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_user_groups">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(150)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="20" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_user_group_members">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_group_members_user" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="user_group_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_group_members_group" references="smoothsurf_sacco_user_groups(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <addUniqueConstraint tableName="smoothsurf_sacco_user_group_members" columnNames="user_id, user_group_id" constraintName="uq_user_group_members"/>
+    </changeSet>
+
+    <changeSet id="21" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_user_group_modules">
+            <column name="user_group_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_group_modules_group" references="smoothsurf_sacco_user_groups(id)"/>
+            </column>
+            <column name="module_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_user_group_modules_module" references="smoothsurf_sacco_modules(id)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="smoothsurf_sacco_user_group_modules" columnNames="user_group_id, module_id" constraintName="pk_user_group_modules"/>
+    </changeSet>
+
 </databaseChangeLog>
