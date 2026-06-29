@@ -162,16 +162,22 @@ public class DataSeeder implements CommandLineRunner {
 
     private ModuleRegister seedModule(String name, String textId, String urlPath, String icon, int orderNo,
             ModuleType moduleType) {
-        return moduleRegisterRepository.findByTextId(textId).orElseGet(() -> {
-            ModuleRegister module = new ModuleRegister();
-            module.setName(name);
-            module.setTextId(textId);
-            module.setUrlPath(urlPath);
-            module.setIcon(icon);
-            module.setOrderNo(orderNo);
-            module.setModuleType(moduleType);
-            return moduleRegisterRepository.save(module);
-        });
+        // Both name and textId are unique columns, and the two can drift apart once admins
+        // start editing seeded modules through the UI (e.g. renaming one without touching the
+        // other) — check both before inserting so re-running the seeder never trips either
+        // constraint.
+        return moduleRegisterRepository.findByTextId(textId)
+                .or(() -> moduleRegisterRepository.findByName(name))
+                .orElseGet(() -> {
+                    ModuleRegister module = new ModuleRegister();
+                    module.setName(name);
+                    module.setTextId(textId);
+                    module.setUrlPath(urlPath);
+                    module.setIcon(icon);
+                    module.setOrderNo(orderNo);
+                    module.setModuleType(moduleType);
+                    return moduleRegisterRepository.save(module);
+                });
     }
 
     private void grantModules(Role role, ModuleRegister... modules) {

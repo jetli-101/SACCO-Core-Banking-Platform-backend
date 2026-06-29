@@ -10,16 +10,20 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.example.sacco_core_banking.classes.DuplicateResourceException;
+import com.example.sacco_core_banking.classes.InvalidStateException;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
 import com.example.sacco_core_banking.dto.module.ModuleRegisterRequest;
 import com.example.sacco_core_banking.dto.module.ModuleResponse;
 import com.example.sacco_core_banking.dto.module.ModuleTreeResponse;
+import com.example.sacco_core_banking.dto.role.RoleResponse;
 import com.example.sacco_core_banking.entities.ModuleRegister;
 import com.example.sacco_core_banking.entities.ModuleType;
+import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
 import com.example.sacco_core_banking.repositories.ModuleTypeRepository;
+import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +37,7 @@ public class ModuleRegisterService {
     private final ModuleRegisterRepository moduleRegisterRepository;
     private final ModuleTypeRepository moduleTypeRepository;
     private final UserRoleRepository userRoleRepository;
+    private final RoleRepository roleRepository;
 
     public List<ModuleResponse> listModules() {
         return moduleRegisterRepository.findByParentIsNullOrderByOrderNo().stream()
@@ -50,6 +55,9 @@ public class ModuleRegisterService {
         if (moduleRegisterRepository.findByTextId(request.getTextId()).isPresent()) {
             throw new DuplicateResourceException("A module with this text ID already exists");
         }
+        if (moduleRegisterRepository.findByName(request.getName()).isPresent()) {
+            throw new DuplicateResourceException("A module with this name already exists");
+        }
 
         ModuleRegister module = new ModuleRegister();
         applyRequest(module, request);
@@ -61,6 +69,17 @@ public class ModuleRegisterService {
         ModuleRegister module = moduleRegisterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
 
+        moduleRegisterRepository.findByTextId(request.getTextId())
+                .filter(other -> !other.getId().equals(id))
+                .ifPresent(other -> {
+                    throw new DuplicateResourceException("A module with this text ID already exists");
+                });
+        moduleRegisterRepository.findByName(request.getName())
+                .filter(other -> !other.getId().equals(id))
+                .ifPresent(other -> {
+                    throw new DuplicateResourceException("A module with this name already exists");
+                });
+
         applyRequest(module, request);
 
         return toResponse(moduleRegisterRepository.save(module));
@@ -69,7 +88,37 @@ public class ModuleRegisterService {
     public void deleteModule(UUID id) {
         ModuleRegister module = moduleRegisterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
+
+        if (module.getChildren() != null && !module.getChildren().isEmpty()) {
+            throw new InvalidStateException("Cannot delete a module that still has child modules — delete or reassign them first");
+        }
+
+        // Role.modules owns the FK to this module — detach it from every role that
+        // currently grants it before deleting, otherwise the delete violates
+        // fk_role_modules_module.
+        List<Role> rolesWithModule = roleRepository.findByModuleId(id);
+        rolesWithModule.forEach(role -> role.getModules().remove(module));
+        roleRepository.saveAll(rolesWithModule);
+
         moduleRegisterRepository.delete(module);
+    }
+
+    /** Roles that currently have this module in their menu (inverse side of Role.modules). */
+    public List<RoleResponse> getRolesForModule(UUID id) {
+        ModuleRegister module = moduleRegisterRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
+
+        return module.getRoles() == null ? List.of() : module.getRoles().stream()
+                .map(this::toRoleResponse)
+                .collect(Collectors.toList());
+    }
+
+    private RoleResponse toRoleResponse(Role role) {
+        return RoleResponse.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .description(role.getDescription())
+                .build();
     }
 
     /** Union of every module granted by any role the user belongs to, grouped by ModuleType for nav rendering. */
