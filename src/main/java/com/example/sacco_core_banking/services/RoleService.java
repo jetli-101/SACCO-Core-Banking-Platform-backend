@@ -9,26 +9,35 @@ import java.util.stream.Collectors;
 import com.example.sacco_core_banking.classes.DuplicateResourceException;
 import com.example.sacco_core_banking.classes.InvalidStateException;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
+import com.example.sacco_core_banking.dto.common.AssignMemberRequest;
+import com.example.sacco_core_banking.dto.common.GroupMemberResponse;
 import com.example.sacco_core_banking.dto.module.ModuleResponse;
 import com.example.sacco_core_banking.dto.role.RoleRequest;
 import com.example.sacco_core_banking.dto.role.RoleResponse;
 import com.example.sacco_core_banking.entities.ModuleRegister;
 import com.example.sacco_core_banking.entities.Role;
+import com.example.sacco_core_banking.entities.User;
+import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
 import com.example.sacco_core_banking.repositories.RoleRepository;
+import com.example.sacco_core_banking.repositories.UserRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class RoleService {
 
-    private final RoleRepository roleRepository;
-    private final ModuleRegisterRepository moduleRegisterRepository;
-    private final UserRoleRepository userRoleRepository;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private ModuleRegisterRepository moduleRegisterRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     public List<RoleResponse> listRoles() {
         return roleRepository.findAll().stream()
@@ -107,6 +116,44 @@ public class RoleService {
         return toResponse(roleRepository.save(role));
     }
 
+    public List<GroupMemberResponse> listMembers(UUID roleId) {
+        if (!roleRepository.existsById(roleId)) {
+            throw new ResourceNotFoundException("Role not found");
+        }
+
+        return userRoleRepository.findByRoleId(roleId).stream()
+                .map(this::toMemberResponse)
+                .collect(Collectors.toList());
+    }
+
+    public GroupMemberResponse addMember(UUID roleId, AssignMemberRequest request) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (userRoleRepository.findByUserIdAndRoleId(user.getId(), roleId).isPresent()) {
+            throw new DuplicateResourceException("This user already has this role");
+        }
+
+        return toMemberResponse(userRoleRepository.save(new UserRole(user, role)));
+    }
+
+    public void removeMember(UUID roleId, UUID userId) {
+        UserRole userRole = userRoleRepository.findByUserIdAndRoleId(userId, roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("This user does not have this role"));
+        userRoleRepository.delete(userRole);
+    }
+
+    private GroupMemberResponse toMemberResponse(UserRole userRole) {
+        return GroupMemberResponse.builder()
+                .id(userRole.getId())
+                .userId(userRole.getUser().getId())
+                .username(userRole.getUser().getUsername())
+                .email(userRole.getUser().getEmail())
+                .build();
+    }
+
     private ModuleResponse toModuleResponse(ModuleRegister module) {
         return ModuleResponse.builder()
                 .id(module.getId())
@@ -127,6 +174,7 @@ public class RoleService {
                 .id(role.getId())
                 .name(role.getName())
                 .description(role.getDescription())
+                .memberCount(userRoleRepository.countByRoleId(role.getId()))
                 .build();
     }
 }

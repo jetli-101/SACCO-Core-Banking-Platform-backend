@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,12 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = Constants.USER_ROLES_PATH)
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('SYSTEM_ADMINISTRATOR')")
 @Tag(name = "User Role Management", description = "APIs for managing User Roles")
 public class UserRoleController {
 
-    private final UserRoleService userRoleService;
+    @Autowired
+    private UserRoleService userRoleService;
 
     @PostMapping
     @Operation(summary = "Create a User Role", description = "Assigns a role group to a user.")

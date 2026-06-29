@@ -13,7 +13,7 @@ import com.example.sacco_core_banking.services.UserModulePermissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,12 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(Constants.USERS_PATH + "/{userId}/module-permissions")
-@RequiredArgsConstructor
 @Tag(name = "User Module Permissions", description = "Per-user CRUD overrides on top of role-group module access")
 public class UserModulePermissionController {
 
-    private final UserModulePermissionService userModulePermissionService;
-    private final CurrentUser currentUser;
+    @Autowired
+    private UserModulePermissionService userModulePermissionService;
+    @Autowired
+    private CurrentUser currentUser;
 
     @GetMapping
     @PreAuthorize("hasRole('SYSTEM_ADMINISTRATOR')")

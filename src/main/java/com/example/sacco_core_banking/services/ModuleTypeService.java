@@ -10,16 +10,16 @@ import com.example.sacco_core_banking.dto.module.ModuleTypeRequest;
 import com.example.sacco_core_banking.dto.module.ModuleTypeResponse;
 import com.example.sacco_core_banking.entities.ModuleType;
 import com.example.sacco_core_banking.repositories.ModuleTypeRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class ModuleTypeService {
 
-    private final ModuleTypeRepository moduleTypeRepository;
+    @Autowired
+    private ModuleTypeRepository moduleTypeRepository;
 
     public List<ModuleTypeResponse> listModuleTypes() {
         return moduleTypeRepository.findAll().stream()

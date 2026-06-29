@@ -4,6 +4,7 @@ import java.time.Year;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -27,22 +28,17 @@ public class EmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
     private static final String LOGO_PATH = "email/smoothsurf-logo.png";
 
-    private final JavaMailSender mailSender;
-    private final TemplateEngine templateEngine;
-    private final boolean mailEnabled;
-    private final String fromAddress;
-    private final String fromName;
+    @Autowired
+    private JavaMailSender mailSender;
+    @Autowired
+    private TemplateEngine templateEngine;
 
-    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine,
-            @Value("${app.mail.enabled}") boolean mailEnabled,
-            @Value("${app.mail.from}") String fromAddress,
-            @Value("${app.mail.from-name}") String fromName) {
-        this.mailSender = mailSender;
-        this.templateEngine = templateEngine;
-        this.mailEnabled = mailEnabled;
-        this.fromAddress = fromAddress;
-        this.fromName = fromName;
-    }
+    @Value("${app.mail.enabled}")
+    private boolean mailEnabled;
+    @Value("${app.mail.from}")
+    private String fromAddress;
+    @Value("${app.mail.from-name}")
+    private String fromName;
 
     public void sendWelcomeEmail(String to, String recipientName) {
         Context context = new Context();

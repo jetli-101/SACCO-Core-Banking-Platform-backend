@@ -20,24 +20,31 @@ import com.example.sacco_core_banking.entities.ModuleRegister;
 import com.example.sacco_core_banking.entities.ModuleType;
 import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.User;
+import com.example.sacco_core_banking.entities.UserGroupMember;
 import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
 import com.example.sacco_core_banking.repositories.ModuleTypeRepository;
 import com.example.sacco_core_banking.repositories.RoleRepository;
+import com.example.sacco_core_banking.repositories.UserGroupMemberRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class ModuleRegisterService {
 
-    private final ModuleRegisterRepository moduleRegisterRepository;
-    private final ModuleTypeRepository moduleTypeRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final RoleRepository roleRepository;
+    @Autowired
+    private ModuleRegisterRepository moduleRegisterRepository;
+    @Autowired
+    private ModuleTypeRepository moduleTypeRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private UserGroupMemberRepository userGroupMemberRepository;
 
     public List<ModuleResponse> listModules() {
         return moduleRegisterRepository.findByParentIsNullOrderByOrderNo().stream()
@@ -121,12 +128,24 @@ public class ModuleRegisterService {
                 .build();
     }
 
-    /** Union of every module granted by any role the user belongs to, grouped by ModuleType for nav rendering. */
+    /**
+     * Union of every module granted by any Role OR any UserGroup the user belongs to,
+     * grouped by ModuleType for nav rendering. Role and UserGroup are two independent
+     * grant paths — a module shows up if either one grants it.
+     */
     public List<ModuleTreeResponse> getMyMenu(User user) {
-        Set<ModuleRegister> granted = userRoleRepository.findByUserId(user.getId()).stream()
+        Set<ModuleRegister> grantedViaRoles = userRoleRepository.findByUserId(user.getId()).stream()
                 .map(UserRole::getRole)
                 .flatMap(role -> role.getModules().stream())
                 .collect(Collectors.toSet());
+
+        Set<ModuleRegister> grantedViaGroups = userGroupMemberRepository.findByUserId(user.getId()).stream()
+                .map(UserGroupMember::getUserGroup)
+                .flatMap(group -> group.getModules().stream())
+                .collect(Collectors.toSet());
+
+        Set<ModuleRegister> granted = new HashSet<>(grantedViaRoles);
+        granted.addAll(grantedViaGroups);
 
         Set<ModuleRegister> withParents = new HashSet<>(granted);
         granted.forEach(module -> includeParents(module, withParents));

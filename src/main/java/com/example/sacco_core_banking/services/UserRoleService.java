@@ -14,18 +14,20 @@ import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class UserRoleService {
 
-    private final UserRoleRepository userRoleRepository;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
     public UserRoleResponse createUserRole(UserRoleRequest request) {
         if (userRoleRepository.findByUserIdAndRoleId(request.getUserId(), request.getRoleId()).isPresent()) {
