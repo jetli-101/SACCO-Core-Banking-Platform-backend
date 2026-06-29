@@ -9,6 +9,7 @@ import com.example.sacco_core_banking.dto.ApiResponse;
 import com.example.sacco_core_banking.dto.module.ModuleRegisterRequest;
 import com.example.sacco_core_banking.dto.module.ModuleResponse;
 import com.example.sacco_core_banking.dto.module.ModuleTreeResponse;
+import com.example.sacco_core_banking.dto.role.RoleResponse;
 import com.example.sacco_core_banking.services.ModuleRegisterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,6 +52,15 @@ public class ModuleRegisterController {
             @Parameter(description = "ID of module being retrieved.", required = true)
             @PathVariable("id") UUID id) {
         return ResponseEntity.ok(ApiResponse.success(moduleRegisterService.getModuleById(id), "success"));
+    }
+
+    @GetMapping(value = "/{id}/roles")
+    @PreAuthorize("hasRole('SYSTEM_ADMINISTRATOR')")
+    @Operation(summary = "Get roles granted access to a module", description = "Returns every role that currently has this module in its menu.")
+    public ResponseEntity<ApiResponse<List<RoleResponse>>> getModuleRoles(
+            @Parameter(description = "ID of the module.", required = true)
+            @PathVariable("id") UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(moduleRegisterService.getRolesForModule(id), "success"));
     }
 
     @GetMapping("/module-tree")

@@ -12,5 +12,7 @@ import org.springframework.stereotype.Repository;
 public interface ModuleRegisterRepository extends JpaRepository<ModuleRegister, UUID> {
     Optional<ModuleRegister> findByTextId(String textId);
 
+    Optional<ModuleRegister> findByName(String name);
+
     List<ModuleRegister> findByParentIsNullOrderByOrderNo();
 }
