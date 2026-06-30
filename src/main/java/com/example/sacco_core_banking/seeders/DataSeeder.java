@@ -2,19 +2,13 @@ package com.example.sacco_core_banking.seeders;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.example.sacco_core_banking.entities.Member;
 import com.example.sacco_core_banking.entities.MemberApproval;
-import com.example.sacco_core_banking.entities.ModuleRegister;
-import com.example.sacco_core_banking.entities.ModuleType;
 import com.example.sacco_core_banking.entities.NextOfKin;
-import com.example.sacco_core_banking.entities.Permission;
 import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.Sacco;
 import com.example.sacco_core_banking.entities.User;
-import com.example.sacco_core_banking.entities.UserModulePermission;
 import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.enums.ApprovalDecision;
 import com.example.sacco_core_banking.enums.Gender;
@@ -23,13 +17,9 @@ import com.example.sacco_core_banking.enums.SaccoStatus;
 import com.example.sacco_core_banking.enums.UserStatus;
 import com.example.sacco_core_banking.repositories.MemberApprovalRepository;
 import com.example.sacco_core_banking.repositories.MemberRepository;
-import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
-import com.example.sacco_core_banking.repositories.ModuleTypeRepository;
 import com.example.sacco_core_banking.repositories.NextOfKinRepository;
-import com.example.sacco_core_banking.repositories.PermissionRepository;
 import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.SaccoRepository;
-import com.example.sacco_core_banking.repositories.UserModulePermissionRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,10 +48,6 @@ public class DataSeeder implements CommandLineRunner {
     private final MemberRepository memberRepository;
     private final NextOfKinRepository nextOfKinRepository;
     private final MemberApprovalRepository memberApprovalRepository;
-    private final ModuleTypeRepository moduleTypeRepository;
-    private final ModuleRegisterRepository moduleRegisterRepository;
-    private final UserModulePermissionRepository userModulePermissionRepository;
-    private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
     private final String adminPassword;
     private final String memberPassword;
@@ -69,8 +55,6 @@ public class DataSeeder implements CommandLineRunner {
     public DataSeeder(SaccoRepository saccoRepository, RoleRepository roleRepository, UserRepository userRepository,
             UserRoleRepository userRoleRepository, MemberRepository memberRepository,
             NextOfKinRepository nextOfKinRepository, MemberApprovalRepository memberApprovalRepository,
-            ModuleTypeRepository moduleTypeRepository, ModuleRegisterRepository moduleRegisterRepository,
-            UserModulePermissionRepository userModulePermissionRepository, PermissionRepository permissionRepository,
             PasswordEncoder passwordEncoder,
             @Value("${app.seed.admin-password}") String adminPassword,
             @Value("${app.seed.member-password}") String memberPassword) {
@@ -81,10 +65,6 @@ public class DataSeeder implements CommandLineRunner {
         this.memberRepository = memberRepository;
         this.nextOfKinRepository = nextOfKinRepository;
         this.memberApprovalRepository = memberApprovalRepository;
-        this.moduleTypeRepository = moduleTypeRepository;
-        this.moduleRegisterRepository = moduleRegisterRepository;
-        this.userModulePermissionRepository = userModulePermissionRepository;
-        this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
         this.adminPassword = adminPassword;
         this.memberPassword = memberPassword;
@@ -118,94 +98,7 @@ public class DataSeeder implements CommandLineRunner {
                 "P.O. Box 220, Eldoret", "Kapsoya Estate, Eldoret", "SS-0004",
                 "Chebet Kiplagat", "Spouse", "0744345696", "24123456", "Kapsoya Estate, Eldoret");
 
-        User teller = seedStaff(sacco, "teller.achieng@smoothsurfsacco.co.ke", "0755345675", RoleName.ROLE_TELLER);
-
-        seedModules(teller);
-    }
-
-    private void seedModules(User teller) {
-        ModuleType membership = seedModuleType("Membership", "membership", 1);
-        ModuleType administration = seedModuleType("Administration", "administration", 2);
-
-        ModuleRegister memberDirectory = seedModule("Member Directory", "member-directory",
-                "/dashboard/members", "icon-users", 1, membership);
-        ModuleRegister pendingApprovals = seedModule("Pending Approvals", "pending-approvals",
-                "/dashboard/admin/approvals", "icon-clock", 2, membership);
-        ModuleRegister userManagement = seedModule("User Management", "user-management",
-                "/dashboard/admin/users", "icon-settings", 1, administration);
-        ModuleRegister rolesAndPermissions = seedModule("Roles & Permissions", "roles-permissions",
-                "/dashboard/admin/roles", "icon-shield", 2, administration);
-
-        Role admin = roleRepository.findByName(RoleName.ROLE_SYSTEM_ADMINISTRATOR.name())
-                .orElseThrow(() -> new IllegalStateException("Roles have not been seeded yet"));
-        Role branchManager = roleRepository.findByName(RoleName.ROLE_BRANCH_MANAGER.name())
-                .orElseThrow(() -> new IllegalStateException("Roles have not been seeded yet"));
-        Role tellerRole = roleRepository.findByName(RoleName.ROLE_TELLER.name())
-                .orElseThrow(() -> new IllegalStateException("Roles have not been seeded yet"));
-
-        grantModules(admin, memberDirectory, pendingApprovals, userManagement, rolesAndPermissions);
-        grantModules(branchManager, memberDirectory, pendingApprovals);
-        grantModules(tellerRole, memberDirectory);
-
-        grantUserPermission(teller, pendingApprovals, "READ", "APPROVE");
-    }
-
-    private ModuleType seedModuleType(String name, String textId, int orderNo) {
-        return moduleTypeRepository.findByTextId(textId).orElseGet(() -> {
-            ModuleType moduleType = new ModuleType();
-            moduleType.setName(name);
-            moduleType.setTextId(textId);
-            moduleType.setOrderNo(orderNo);
-            return moduleTypeRepository.save(moduleType);
-        });
-    }
-
-    private ModuleRegister seedModule(String name, String textId, String urlPath, String icon, int orderNo,
-            ModuleType moduleType) {
-        // Both name and textId are unique columns, and the two can drift apart once admins
-        // start editing seeded modules through the UI (e.g. renaming one without touching the
-        // other) — check both before inserting so re-running the seeder never trips either
-        // constraint.
-        return moduleRegisterRepository.findByTextId(textId)
-                .or(() -> moduleRegisterRepository.findByName(name))
-                .orElseGet(() -> {
-                    ModuleRegister module = new ModuleRegister();
-                    module.setName(name);
-                    module.setTextId(textId);
-                    module.setUrlPath(urlPath);
-                    module.setIcon(icon);
-                    module.setOrderNo(orderNo);
-                    module.setModuleType(moduleType);
-                    return moduleRegisterRepository.save(module);
-                });
-    }
-
-    private void grantModules(Role role, ModuleRegister... modules) {
-        Set<ModuleRegister> granted = new HashSet<>(role.getModules());
-        for (ModuleRegister module : modules) {
-            granted.add(module);
-        }
-        role.setModules(granted);
-        roleRepository.save(role);
-    }
-
-    private void grantUserPermission(User user, ModuleRegister module, String... permissionNames) {
-        Set<Permission> permissions = new HashSet<>();
-        for (String name : permissionNames) {
-            permissions.add(permissionRepository.findByName(name)
-                    .orElseThrow(() -> new IllegalStateException("Permissions have not been seeded yet")));
-        }
-
-        UserModulePermission permission = userModulePermissionRepository
-                .findByUserIdAndModuleRegisterId(user.getId(), module.getId())
-                .orElseGet(() -> {
-                    UserModulePermission created = new UserModulePermission();
-                    created.setUser(user);
-                    created.setModuleRegister(module);
-                    return created;
-                });
-        permission.setPermissions(permissions);
-        userModulePermissionRepository.save(permission);
+        seedStaff(sacco, "teller.achieng@smoothsurfsacco.co.ke", "0755345675", RoleName.ROLE_TELLER);
     }
 
     private void assignRole(User user, Role role) {

@@ -20,6 +20,8 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
     boolean existsBySaccoIdAndNationalId(UUID saccoId, String nationalId);
 
+    long countBySaccoId(UUID saccoId);
+
     @Query("select m from Member m where m.sacco.id = :saccoId and m.user.status = :status")
     List<Member> findBySaccoIdAndUserStatus(@Param("saccoId") UUID saccoId, @Param("status") UserStatus status);
 }

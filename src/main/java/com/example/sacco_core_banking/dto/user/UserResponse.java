@@ -22,6 +22,8 @@ public class UserResponse {
     private String phone;
     private List<String> roles;
     private String status;
+    private String avatarUrl;
+    private UUID memberId;
     private OffsetDateTime lastLoginAt;
     private OffsetDateTime createdAt;
 }

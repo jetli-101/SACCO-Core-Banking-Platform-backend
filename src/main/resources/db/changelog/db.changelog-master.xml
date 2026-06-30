@@ -27,5 +27,6 @@
     </changeSet>
 
     <include file="db/changelog/002-user-management.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/003-user-avatar.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

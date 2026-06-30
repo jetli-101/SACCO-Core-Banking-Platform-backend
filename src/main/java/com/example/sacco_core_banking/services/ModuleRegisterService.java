@@ -20,12 +20,16 @@ import com.example.sacco_core_banking.entities.ModuleRegister;
 import com.example.sacco_core_banking.entities.ModuleType;
 import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.User;
+import com.example.sacco_core_banking.entities.UserGroup;
 import com.example.sacco_core_banking.entities.UserGroupMember;
 import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.repositories.ModuleRegisterRepository;
 import com.example.sacco_core_banking.repositories.ModuleTypeRepository;
+import com.example.sacco_core_banking.repositories.RolePermissionRepository;
 import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.UserGroupMemberRepository;
+import com.example.sacco_core_banking.repositories.UserGroupRepository;
+import com.example.sacco_core_banking.repositories.UserModulePermissionRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,6 +49,12 @@ public class ModuleRegisterService {
     private RoleRepository roleRepository;
     @Autowired
     private UserGroupMemberRepository userGroupMemberRepository;
+    @Autowired
+    private UserGroupRepository userGroupRepository;
+    @Autowired
+    private UserModulePermissionRepository userModulePermissionRepository;
+    @Autowired
+    private RolePermissionRepository rolePermissionRepository;
 
     public List<ModuleResponse> listModules() {
         return moduleRegisterRepository.findByParentIsNullOrderByOrderNo().stream()
@@ -106,6 +116,21 @@ public class ModuleRegisterService {
         List<Role> rolesWithModule = roleRepository.findByModuleId(id);
         rolesWithModule.forEach(role -> role.getModules().remove(module));
         roleRepository.saveAll(rolesWithModule);
+
+        // UserGroup.modules is a second, independent grant path to this module
+        // (fk_user_group_modules_module) — detach it there too.
+        List<UserGroup> groupsWithModule = userGroupRepository.findByModuleId(id);
+        groupsWithModule.forEach(group -> group.getModules().remove(module));
+        userGroupRepository.saveAll(groupsWithModule);
+
+        // Per-user permission overrides also FK to this module (fk_user_module_permissions_module)
+        // — clear those too, otherwise the delete fails for any module an admin has ever
+        // granted a user-specific override on.
+        userModulePermissionRepository.deleteAll(userModulePermissionRepository.findByModuleRegisterId(id));
+
+        // RolePermission.moduleRegister is a third FK to this module (module-scoped default
+        // permissions, as opposed to a role-wide grant) — clear those too.
+        rolePermissionRepository.deleteAll(rolePermissionRepository.findByModuleRegisterId(id));
 
         moduleRegisterRepository.delete(module);
     }

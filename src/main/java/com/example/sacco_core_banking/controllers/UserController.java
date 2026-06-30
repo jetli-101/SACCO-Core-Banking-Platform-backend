@@ -27,7 +27,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Users are never hard-deleted (see UserStatus) — "delete" for an account means
@@ -44,6 +46,31 @@ public class UserController {
     private UserService userService;
     @Autowired
     private CurrentUser currentUser;
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get my account", description = "Returns the logged-in user's own account — usable by any role, including staff/admin accounts with no Member profile.")
+    public ResponseEntity<ApiResponse<UserResponse>> getMyAccount() {
+        User user = currentUser.get();
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserById(user.getId(), user.getSacco().getId()), "Account retrieved"));
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Update my account", description = "Updates the logged-in user's own username/phone — usable by any role, including staff/admin accounts with no Member profile.")
+    public ResponseEntity<ApiResponse<UserResponse>> updateMyAccount(@Valid @RequestBody UpdateUserRequest request) {
+        User user = currentUser.get();
+        UserResponse response = userService.updateUser(user, user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Account updated"));
+    }
+
+    @PostMapping("/me/photo")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Upload my profile photo", description = "Replaces the logged-in user's profile photo — usable by any role.")
+    public ResponseEntity<ApiResponse<UserResponse>> uploadMyPhoto(@RequestParam("file") MultipartFile file) {
+        UserResponse response = userService.updateAvatar(currentUser.get(), file);
+        return ResponseEntity.ok(ApiResponse.success(response, "Profile photo updated"));
+    }
 
     @GetMapping
     @Operation(summary = "List users", description = "Lists every account in the caller's Sacco.")
