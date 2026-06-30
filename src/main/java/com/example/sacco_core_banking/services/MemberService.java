@@ -32,6 +32,8 @@ public class MemberService {
     private NextOfKinRepository nextOfKinRepository;
     @Autowired
     private UserRoleRepository userRoleRepository;
+    @Autowired
+    private AuditLogService auditLogService;
 
     public MemberResponse getMyProfile(User currentUser) {
         Member member = memberRepository.findByUserId(currentUser.getId())
@@ -43,13 +45,7 @@ public class MemberService {
         Member member = memberRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("No member profile for this account"));
 
-        member.setOccupation(request.getOccupation());
-        member.setEmployer(request.getEmployer());
-        member.setCounty(request.getCounty());
-        member.setConstituency(request.getConstituency());
-        member.setWard(request.getWard());
-        member.setPostalAddress(request.getPostalAddress());
-        member.setPhysicalAddress(request.getPhysicalAddress());
+        applyContactDetails(member, request);
         member = memberRepository.save(member);
 
         return toResponse(member);
@@ -64,6 +60,36 @@ public class MemberService {
         }
 
         return toResponse(member);
+    }
+
+    /**
+     * Admin-side edit from the Member Directory — same editable fields as the member's
+     * own self-service update (UpdateMemberRequest), KYC identity stays untouched here too.
+     */
+    public MemberResponse updateMember(User admin, UUID memberId, UpdateMemberRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+
+        if (!member.getSacco().getId().equals(admin.getSacco().getId())) {
+            throw new ResourceNotFoundException("Member not found");
+        }
+
+        applyContactDetails(member, request);
+        member = memberRepository.save(member);
+
+        auditLogService.record(admin, "MEMBER_PROFILE_UPDATED", "Member", member.getId());
+
+        return toResponse(member);
+    }
+
+    private void applyContactDetails(Member member, UpdateMemberRequest request) {
+        member.setOccupation(request.getOccupation());
+        member.setEmployer(request.getEmployer());
+        member.setCounty(request.getCounty());
+        member.setConstituency(request.getConstituency());
+        member.setWard(request.getWard());
+        member.setPostalAddress(request.getPostalAddress());
+        member.setPhysicalAddress(request.getPhysicalAddress());
     }
 
     public List<MemberResponse> listMembers(UUID saccoId) {
@@ -96,6 +122,8 @@ public class MemberService {
                         .map(Role::getName)
                         .collect(Collectors.toList()))
                 .status(user.getStatus().name())
+                .avatarUrl(user.getAvatarUrl())
+                .memberId(member.getId())
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .build();

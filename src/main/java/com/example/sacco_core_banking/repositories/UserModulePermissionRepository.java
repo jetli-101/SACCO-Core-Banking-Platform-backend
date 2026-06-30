@@ -12,5 +12,7 @@ import org.springframework.stereotype.Repository;
 public interface UserModulePermissionRepository extends JpaRepository<UserModulePermission, UUID> {
     List<UserModulePermission> findByUserId(UUID userId);
 
+    List<UserModulePermission> findByModuleRegisterId(UUID moduleId);
+
     Optional<UserModulePermission> findByUserIdAndModuleRegisterId(UUID userId, UUID moduleId);
 }

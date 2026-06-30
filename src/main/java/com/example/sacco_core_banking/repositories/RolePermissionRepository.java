@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RolePermissionRepository extends JpaRepository<RolePermission, UUID> {
     List<RolePermission> findByRoleId(UUID roleId);
+
+    List<RolePermission> findByModuleRegisterId(UUID moduleId);
 }

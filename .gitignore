@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Uploaded files (local-disk storage for profile photos, etc.) ###
+uploads/

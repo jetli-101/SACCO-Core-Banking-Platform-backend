@@ -17,6 +17,7 @@ import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.entities.UserRole;
 import com.example.sacco_core_banking.enums.UserStatus;
+import com.example.sacco_core_banking.repositories.MemberRepository;
 import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional
@@ -36,9 +38,13 @@ public class UserService {
     @Autowired
     private UserRoleRepository userRoleRepository;
     @Autowired
+    private MemberRepository memberRepository;
+    @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
     private AuditLogService auditLogService;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     public List<UserResponse> listUsers(UUID saccoId) {
         return userRepository.findBySaccoId(saccoId).stream()
@@ -98,6 +104,10 @@ public class UserService {
             throw new InvalidStateException("You cannot change your own account status");
         }
 
+        if (request.getStatus() == UserStatus.PENDING || request.getStatus() == UserStatus.REJECTED) {
+            throw new InvalidStateException("Use the member-approval endpoints to approve or reject a pending registration");
+        }
+
         user.setStatus(request.getStatus());
         user = userRepository.save(user);
 
@@ -123,6 +133,22 @@ public class UserService {
         replaceRoles(user, roleNames);
 
         auditLogService.record(admin, "ROLES_ASSIGNED:" + String.join(",", roleNames), "User", user.getId());
+
+        return toResponse(user);
+    }
+
+    public UserResponse updateAvatar(User user, MultipartFile file) {
+        String previousAvatarUrl = user.getAvatarUrl();
+
+        String url = fileStorageService.store(file, "avatars", user.getId());
+        user.setAvatarUrl(url);
+        user = userRepository.save(user);
+
+        if (previousAvatarUrl != null) {
+            fileStorageService.delete(previousAvatarUrl);
+        }
+
+        auditLogService.record(user, "PROFILE_PHOTO_UPDATED", "User", user.getId());
 
         return toResponse(user);
     }
@@ -163,6 +189,8 @@ public class UserService {
                 .phone(user.getPhone())
                 .roles(rolesOf(user).stream().map(Role::getName).collect(Collectors.toList()))
                 .status(user.getStatus().name())
+                .avatarUrl(user.getAvatarUrl())
+                .memberId(memberRepository.findByUserId(user.getId()).map(member -> member.getId()).orElse(null))
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .build();

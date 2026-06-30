@@ -59,6 +59,9 @@ public class User extends BaseEntity {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
+
     @JsonIgnore
     public boolean isEnabled() {
         return status == UserStatus.ACTIVE;
