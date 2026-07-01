@@ -24,6 +24,7 @@ public class UserResponse {
     private String status;
     private String avatarUrl;
     private UUID memberId;
+    private boolean firstLogin;
     private OffsetDateTime lastLoginAt;
     private OffsetDateTime createdAt;
 }

@@ -154,9 +154,12 @@ public class ModuleRegisterService {
     }
 
     /**
-     * Union of every module granted by any Role OR any UserGroup the user belongs to,
-     * grouped by ModuleType for nav rendering. Role and UserGroup are two independent
-     * grant paths — a module shows up if either one grants it.
+     * Modules visible to the current user in the sidebar.
+     *
+     * A module is "unrestricted" when no role and no user-group has ever been granted it —
+     * those are shown to every authenticated user by default (opt-out model).
+     * A module becomes "restricted" the moment any role/group is granted it; from that
+     * point it is shown only to users whose own roles or groups include the grant.
      */
     public List<ModuleTreeResponse> getMyMenu(User user) {
         Set<ModuleRegister> grantedViaRoles = userRoleRepository.findByUserId(user.getId()).stream()
@@ -169,8 +172,21 @@ public class ModuleRegisterService {
                 .flatMap(group -> group.getModules().stream())
                 .collect(Collectors.toSet());
 
+        // Collect IDs of every module that has been restricted (granted to at least one role/group).
+        Set<UUID> restrictedIds = new HashSet<>();
+        roleRepository.findAll().forEach(role ->
+                role.getModules().forEach(m -> restrictedIds.add(m.getId())));
+        userGroupRepository.findAll().forEach(group ->
+                group.getModules().forEach(m -> restrictedIds.add(m.getId())));
+
+        // Unrestricted modules have no grants → visible to everyone.
+        Set<ModuleRegister> unrestricted = moduleRegisterRepository.findAll().stream()
+                .filter(m -> !restrictedIds.contains(m.getId()))
+                .collect(Collectors.toSet());
+
         Set<ModuleRegister> granted = new HashSet<>(grantedViaRoles);
         granted.addAll(grantedViaGroups);
+        granted.addAll(unrestricted);
 
         Set<ModuleRegister> withParents = new HashSet<>(granted);
         granted.forEach(module -> includeParents(module, withParents));

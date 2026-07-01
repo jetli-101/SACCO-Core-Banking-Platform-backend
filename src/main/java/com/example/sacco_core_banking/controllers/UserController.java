@@ -8,7 +8,7 @@ import com.example.sacco_core_banking.classes.CurrentUser;
 import com.example.sacco_core_banking.dto.ApiResponse;
 import com.example.sacco_core_banking.dto.role.RoleResponse;
 import com.example.sacco_core_banking.dto.user.AssignRolesRequest;
-import com.example.sacco_core_banking.dto.user.CreateStaffUserRequest;
+import com.example.sacco_core_banking.dto.user.InviteUserRequest;
 import com.example.sacco_core_banking.dto.user.UpdateUserRequest;
 import com.example.sacco_core_banking.dto.user.UpdateUserStatusRequest;
 import com.example.sacco_core_banking.dto.user.UserResponse;
@@ -87,11 +87,11 @@ public class UserController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a staff account", description = "Admin-provisioned account (teller, manager, etc.) — goes straight to ACTIVE.")
-    public ResponseEntity<ApiResponse<UserResponse>> createStaffUser(@Valid @RequestBody CreateStaffUserRequest request) {
+    @Operation(summary = "Invite a staff account", description = "Sends an invitation email with a temporary password and activation link. Account starts as PENDING_ACTIVATION.")
+    public ResponseEntity<ApiResponse<UserResponse>> inviteUser(@Valid @RequestBody InviteUserRequest request) {
         User admin = currentUser.get();
-        UserResponse response = userService.createStaffUser(admin, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Staff account created"));
+        UserResponse response = userService.inviteUser(admin, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Invitation sent successfully"));
     }
 
     @PutMapping("/{id}")
