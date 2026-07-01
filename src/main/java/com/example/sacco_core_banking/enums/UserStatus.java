@@ -6,6 +6,7 @@ package com.example.sacco_core_banking.enums;
  */
 public enum UserStatus {
     PENDING,
+    PENDING_ACTIVATION,
     ACTIVE,
     INACTIVE,
     REJECTED,

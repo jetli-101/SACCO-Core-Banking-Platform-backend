@@ -51,6 +51,18 @@ public class EmailService {
         send(to, "Your SmoothSurf Sacco account has been created", "email/welcome-email", context);
     }
 
+    public void sendInvitationEmail(String to, String recipientName, String tempPassword, String activationLink) {
+        Context context = new Context();
+        context.setVariable("recipientName", recipientName);
+        context.setVariable("email", to);
+        context.setVariable("tempPassword", tempPassword);
+        context.setVariable("activationLink", activationLink);
+        context.setVariable("senderName", fromName);
+        context.setVariable("copyrightYear", Year.now().getValue());
+
+        send(to, "You've been invited to SmoothSurf Sacco — Activate your account", "email/invitation-email", context);
+    }
+
     public void sendOtpEmail(String to, String recipientName, String otp, int expiryMinutes) {
         Context context = new Context();
         context.setVariable("recipientName", recipientName);

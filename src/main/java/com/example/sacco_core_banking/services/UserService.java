@@ -1,5 +1,6 @@
 package com.example.sacco_core_banking.services;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -9,10 +10,11 @@ import com.example.sacco_core_banking.classes.DuplicateResourceException;
 import com.example.sacco_core_banking.classes.InvalidStateException;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
 import com.example.sacco_core_banking.dto.role.RoleResponse;
-import com.example.sacco_core_banking.dto.user.CreateStaffUserRequest;
+import com.example.sacco_core_banking.dto.user.InviteUserRequest;
 import com.example.sacco_core_banking.dto.user.UpdateUserRequest;
 import com.example.sacco_core_banking.dto.user.UpdateUserStatusRequest;
 import com.example.sacco_core_banking.dto.user.UserResponse;
+import com.example.sacco_core_banking.entities.ActivationToken;
 import com.example.sacco_core_banking.entities.Role;
 import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.entities.UserRole;
@@ -22,6 +24,7 @@ import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
 import com.example.sacco_core_banking.repositories.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +48,13 @@ public class UserService {
     private AuditLogService auditLogService;
     @Autowired
     private FileStorageService fileStorageService;
+    @Autowired
+    private ActivationTokenService activationTokenService;
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
 
     public List<UserResponse> listUsers(UUID saccoId) {
         return userRepository.findBySaccoId(saccoId).stream()
@@ -57,7 +67,7 @@ public class UserService {
         return toResponse(user);
     }
 
-    public UserResponse createStaffUser(User admin, CreateStaffUserRequest request) {
+    public UserResponse inviteUser(User admin, InviteUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("An account with this email already exists");
         }
@@ -65,20 +75,53 @@ public class UserService {
             throw new DuplicateResourceException("An account with this phone number already exists");
         }
 
+        String tempPassword = generateTempPassword();
+
         User user = new User();
         user.setSacco(admin.getSacco());
         user.setUsername(request.getEmail().substring(0, request.getEmail().indexOf('@')));
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus(UserStatus.ACTIVE);
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        user.setStatus(UserStatus.PENDING_ACTIVATION);
+        user.setFirstLogin(true);
         user = userRepository.save(user);
 
         replaceRoles(user, request.getRoleNames());
 
-        auditLogService.record(admin, "STAFF_USER_CREATED", "User", user.getId());
+        ActivationToken activationToken = activationTokenService.createToken(user);
+        String activationLink = frontendBaseUrl + "/auth/activate?token=" + activationToken.getToken();
+
+        emailService.sendInvitationEmail(user.getEmail(), request.getFirstName(), tempPassword, activationLink);
+        auditLogService.record(admin, "STAFF_USER_INVITED", "User", user.getId());
 
         return toResponse(user);
+    }
+
+    private String generateTempPassword() {
+        SecureRandom random = new SecureRandom();
+        String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lower = "abcdefghijklmnopqrstuvwxyz";
+        String digits = "0123456789";
+        String special = "!@#$%&*";
+        String all = upper + lower + digits + special;
+
+        StringBuilder sb = new StringBuilder(12);
+        sb.append(upper.charAt(random.nextInt(upper.length())));
+        sb.append(lower.charAt(random.nextInt(lower.length())));
+        sb.append(digits.charAt(random.nextInt(digits.length())));
+        sb.append(special.charAt(random.nextInt(special.length())));
+        for (int i = 4; i < 12; i++) {
+            sb.append(all.charAt(random.nextInt(all.length())));
+        }
+        // Fisher-Yates shuffle
+        for (int i = sb.length() - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            char tmp = sb.charAt(i);
+            sb.setCharAt(i, sb.charAt(j));
+            sb.setCharAt(j, tmp);
+        }
+        return sb.toString();
     }
 
     public UserResponse updateUser(User admin, UUID userId, UpdateUserRequest request) {
@@ -190,6 +233,7 @@ public class UserService {
                 .roles(rolesOf(user).stream().map(Role::getName).collect(Collectors.toList()))
                 .status(user.getStatus().name())
                 .avatarUrl(user.getAvatarUrl())
+                .firstLogin(user.isFirstLogin())
                 .memberId(memberRepository.findByUserId(user.getId()).map(member -> member.getId()).orElse(null))
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())

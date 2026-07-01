@@ -8,10 +8,12 @@ import com.example.sacco_core_banking.classes.AppUserDetails;
 import com.example.sacco_core_banking.classes.DuplicateResourceException;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
 import com.example.sacco_core_banking.dto.auth.AuthResponse;
+import com.example.sacco_core_banking.dto.auth.ChangePasswordRequest;
 import com.example.sacco_core_banking.dto.auth.LoginRequest;
 import com.example.sacco_core_banking.dto.auth.RefreshTokenRequest;
 import com.example.sacco_core_banking.dto.auth.RegisterMemberRequest;
 import com.example.sacco_core_banking.dto.auth.RegisterResponse;
+import com.example.sacco_core_banking.dto.auth.VerifyLoginOtpRequest;
 import com.example.sacco_core_banking.dto.user.UserResponse;
 import com.example.sacco_core_banking.entities.Member;
 import com.example.sacco_core_banking.entities.NextOfKin;
@@ -65,6 +67,8 @@ public class AuthService {
     private EmailService emailService;
     @Autowired
     private OtpService otpService;
+    @Autowired
+    private ActivationTokenService activationTokenService;
 
     public RegisterResponse register(RegisterMemberRequest request) {
         Sacco sacco = saccoRepository.findByRegistrationNumber(request.getSaccoCode())
@@ -152,12 +156,71 @@ public class AuthService {
         AppUserDetails principal = (AppUserDetails) authentication.getPrincipal();
         User user = principal.getUser();
 
+        // First-login invited staff: send OTP rather than issuing JWT immediately.
+        if (user.isFirstLogin()) {
+            otpService.generateAndSendOtp(user, OtpPurpose.LOGIN);
+            return AuthResponse.builder()
+                    .otpRequired(true)
+                    .email(user.getEmail())
+                    .build();
+        }
+
         user.setLastLoginAt(OffsetDateTime.now());
         userRepository.save(user);
-
         auditLogService.record(user, "LOGIN", "User", user.getId());
-
         return buildAuthResponse(user, principal.getRoles());
+    }
+
+    public AuthResponse verifyLoginOtp(VerifyLoginOtpRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("No account found for email: " + request.getEmail()));
+
+        otpService.verifyOtp(request.getEmail(), request.getOtp(), OtpPurpose.LOGIN);
+
+        List<Role> roles = userRoleRepository.findByUserId(user.getId()).stream()
+                .map(UserRole::getRole)
+                .collect(Collectors.toList());
+
+        user.setLastLoginAt(OffsetDateTime.now());
+        userRepository.save(user);
+        auditLogService.record(user, "LOGIN_OTP_VERIFIED", "User", user.getId());
+
+        AuthResponse response = buildAuthResponse(user, roles);
+        response.setRequiresPasswordChange(user.isFirstLogin());
+        return response;
+    }
+
+    public void activateAccount(String tokenValue) {
+        User user = activationTokenService.validateAndConsume(tokenValue);
+        auditLogService.record(user, "ACCOUNT_ACTIVATED", "User", user.getId());
+    }
+
+    public void changeTemporaryPassword(User user, ChangePasswordRequest request) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Current password is incorrect");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadCredentialsException("New password and confirmation do not match");
+        }
+        validatePasswordComplexity(request.getNewPassword());
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setFirstLogin(false);
+        userRepository.save(user);
+        auditLogService.record(user, "PASSWORD_CHANGED", "User", user.getId());
+    }
+
+    private void validatePasswordComplexity(String password) {
+        if (password.length() < 8)
+            throw new BadCredentialsException("Password must be at least 8 characters");
+        if (!password.matches(".*[A-Z].*"))
+            throw new BadCredentialsException("Password must contain at least one uppercase letter");
+        if (!password.matches(".*[a-z].*"))
+            throw new BadCredentialsException("Password must contain at least one lowercase letter");
+        if (!password.matches(".*\\d.*"))
+            throw new BadCredentialsException("Password must contain at least one number");
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*"))
+            throw new BadCredentialsException("Password must contain at least one special character");
     }
 
     public AuthResponse refresh(RefreshTokenRequest request) {
@@ -192,6 +255,8 @@ public class AuthService {
                 .phone(user.getPhone())
                 .roles(roles.stream().map(Role::getName).collect(Collectors.toList()))
                 .status(user.getStatus().name())
+                .firstLogin(user.isFirstLogin())
+                .avatarUrl(user.getAvatarUrl())
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .build();

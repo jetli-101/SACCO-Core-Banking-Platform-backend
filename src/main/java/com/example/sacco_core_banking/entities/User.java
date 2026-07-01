@@ -62,6 +62,9 @@ public class User extends BaseEntity {
     @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;
 
+    @Column(name = "first_login", nullable = false)
+    private boolean firstLogin = false;
+
     @JsonIgnore
     public boolean isEnabled() {
         return status == UserStatus.ACTIVE;
