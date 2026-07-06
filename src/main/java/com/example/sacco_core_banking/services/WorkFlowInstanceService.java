@@ -81,6 +81,7 @@ public class WorkFlowInstanceService {
                 .initiatedByUserId(instance.getInitiatedBy() != null ? instance.getInitiatedBy().getId() : null)
                 .initiatedByName(instance.getInitiatedBy() != null ? instance.getInitiatedBy().getUsername() : null)
                 .initiatedAt(instance.getInitiatedAt())
+                .updatedAt(instance.getUpdatedAt())
                 .data(instance.getData())
                 .build();
     }
