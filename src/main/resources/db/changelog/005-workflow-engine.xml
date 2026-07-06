@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Workflow definitions -->
+    <changeSet id="25" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_workflows">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by_user_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_workflows_created_by" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Ordered stages within a workflow -->
+    <changeSet id="26" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_stages">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="workflow_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_stages_workflow"
+                             references="smoothsurf_sacco_wf_workflows(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="order_no" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="responsible_group_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_stages_responsible_group"
+                             references="smoothsurf_sacco_user_groups(id)"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_initial" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_final" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Allowed moves between stages -->
+    <changeSet id="27" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_transitions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="workflow_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_transitions_workflow"
+                             references="smoothsurf_sacco_wf_workflows(id)"/>
+            </column>
+            <column name="from_stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_transitions_from_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="to_stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_transitions_to_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_type" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resulting_status_label" type="VARCHAR(255)"/>
+            <column name="description" type="TEXT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Plug-in point: a module's process type key resolves to a workflow -->
+    <changeSet id="28" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_mappings">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="process_type_key" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="workflow_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_mappings_workflow"
+                             references="smoothsurf_sacco_wf_workflows(id)"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Running/finished processes -->
+    <changeSet id="29" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_instances">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="process_code" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="process_name" type="VARCHAR(255)"/>
+            <column name="workflow_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_instances_workflow"
+                             references="smoothsurf_sacco_wf_workflows(id)"/>
+            </column>
+            <column name="process_type_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_instances_current_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="current_stage_status_label" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(30)" defaultValue="INITIATED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assigned_to_user_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_instances_assigned_to" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="due_date" type="TIMESTAMPTZ"/>
+            <column name="initiated_by_user_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_instances_initiated_by" references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="initiated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSONB"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Append-only audit trail, one row per transition taken -->
+    <changeSet id="30" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_instance_history">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="instance_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_instance_history_instance"
+                             references="smoothsurf_sacco_wf_instances(id)"/>
+            </column>
+            <column name="from_stage_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_instance_history_from_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="to_stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_instance_history_to_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="transition_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_instance_history_transition"
+                             references="smoothsurf_sacco_wf_transitions(id)"/>
+            </column>
+            <column name="comment" type="TEXT"/>
+            <column name="performed_by_user_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_instance_history_performed_by"
+                             references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="performed_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_snapshot" type="JSONB"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

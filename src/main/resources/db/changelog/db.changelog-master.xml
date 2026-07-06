@@ -29,5 +29,7 @@
     <include file="db/changelog/002-user-management.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/003-user-avatar.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/004-invitation-flow.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/005-workflow-engine.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/006-workflow-engine-extensions.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
