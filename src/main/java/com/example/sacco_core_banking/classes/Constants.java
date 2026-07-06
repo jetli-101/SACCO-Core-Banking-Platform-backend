@@ -11,6 +11,15 @@ public interface Constants {
     String PERMISSIONS_PATH = API_BASE_PATH + "/permissions";
     String USER_ROLES_PATH = API_BASE_PATH + "/user-roles";
     String ROLE_PERMISSIONS_PATH = API_BASE_PATH + "/role-permissions";
+    String WORKFLOWS_PATH = API_BASE_PATH + "/workflows";
+    String WORKFLOW_STAGES_PATH = API_BASE_PATH + "/workflow-stages";
+    String WORKFLOW_TRANSITIONS_PATH = API_BASE_PATH + "/workflow-transitions";
+    String WORKFLOW_MAPPINGS_PATH = API_BASE_PATH + "/workflow-mappings";
+    String WORKFLOW_INSTANCES_PATH = API_BASE_PATH + "/workflow-instances";
+    String WORKFLOW_INSTANCE_HISTORY_PATH = API_BASE_PATH + "/workflow-instance-history";
+    String WORKFLOW_STATUSES_PATH = API_BASE_PATH + "/workflow-statuses";
+    String WORKFLOW_STATES_PATH = API_BASE_PATH + "/workflow-states";
+    String WORKFLOW_STAGE_ACTIONS_PATH = API_BASE_PATH + "/workflow-stage-actions";
 
     String TEXT_FIELD_REQUIRED = "Input is required for this field!";
     String TEXT_FIELD_UNIQUE = "Input should be unique for this field!";

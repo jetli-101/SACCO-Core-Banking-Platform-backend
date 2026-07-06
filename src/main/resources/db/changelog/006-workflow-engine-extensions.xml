@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Shared status catalog (Submitted, Reviewed, Approved, Rejected, Completed, ...) -->
+    <changeSet id="31" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_statuses">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="text_id" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Shared stage-lifecycle state catalog (DRAFT/ACTIVE/ARCHIVED — seeded by WorkFlowStateSeeder) -->
+    <changeSet id="32" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_states">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="text_id" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Flexible stage responsibility (GROUP/ROLE/USERS/ANY) + lifecycle state + default status -->
+    <changeSet id="33" author="sacco-dev">
+        <addColumn tableName="smoothsurf_sacco_wf_stages">
+            <column name="responsible_type" type="VARCHAR(20)" defaultValue="ANY">
+                <constraints nullable="false"/>
+            </column>
+            <column name="responsible_role_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_stages_responsible_role" references="smoothsurf_sacco_roles(id)"/>
+            </column>
+            <column name="state_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_stages_state" references="smoothsurf_sacco_wf_states(id)"/>
+            </column>
+            <column name="default_status_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_stages_default_status" references="smoothsurf_sacco_wf_statuses(id)"/>
+            </column>
+        </addColumn>
+        <sql>UPDATE smoothsurf_sacco_wf_stages SET responsible_type = 'GROUP' WHERE responsible_group_id IS NOT NULL</sql>
+        <dropColumn tableName="smoothsurf_sacco_wf_stages" columnName="active"/>
+    </changeSet>
+
+    <!-- Per-user stage assignment — consulted when a stage's responsible_type is USERS -->
+    <changeSet id="34" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_stage_responsible_users">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_stage_responsible_users_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_stage_responsible_users_user"
+                             references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Transition's resulting status becomes a lookup FK instead of a free-text label -->
+    <changeSet id="35" author="sacco-dev">
+        <addColumn tableName="smoothsurf_sacco_wf_transitions">
+            <column name="resulting_status_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_transitions_resulting_status"
+                             references="smoothsurf_sacco_wf_statuses(id)"/>
+            </column>
+        </addColumn>
+        <dropColumn tableName="smoothsurf_sacco_wf_transitions" columnName="resulting_status_label"/>
+    </changeSet>
+
+    <!-- Instance's current-stage status label becomes a lookup FK too -->
+    <changeSet id="36" author="sacco-dev">
+        <addColumn tableName="smoothsurf_sacco_wf_instances">
+            <column name="current_status_id" type="UUID">
+                <constraints foreignKeyName="fk_wf_instances_current_status"
+                             references="smoothsurf_sacco_wf_statuses(id)"/>
+            </column>
+        </addColumn>
+        <dropColumn tableName="smoothsurf_sacco_wf_instances" columnName="current_stage_status_label"/>
+    </changeSet>
+
+    <!-- Optional checklist/approval-comment gate on top of a transition -->
+    <changeSet id="37" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_stage_actions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_stage_actions_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="transition_id" type="UUID">
+                <constraints nullable="false" unique="true"
+                             foreignKeyName="fk_wf_stage_actions_transition"
+                             references="smoothsurf_sacco_wf_transitions(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requires_checklist_completion" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requires_approval_comment" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="38" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_stage_action_checklist">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="stage_action_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_wf_stage_action_checklist_action"
+                             references="smoothsurf_sacco_wf_stage_actions(id)"/>
+            </column>
+            <column name="item_text" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="required" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="order_no" type="INT" defaultValueNumeric="0"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
