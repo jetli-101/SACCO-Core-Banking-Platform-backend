@@ -35,5 +35,7 @@ public class WorkFlowInstanceResponse {
     private UUID initiatedByUserId;
     private String initiatedByName;
     private OffsetDateTime initiatedAt;
+    /** Last time the instance moved stage — used to compute completion time once status is COMPLETED. */
+    private OffsetDateTime updatedAt;
     private Map<String, Object> data;
 }
