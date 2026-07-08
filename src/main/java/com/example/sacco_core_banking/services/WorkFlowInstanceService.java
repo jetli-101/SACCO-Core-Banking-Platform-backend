@@ -9,10 +9,15 @@ import java.util.stream.Collectors;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
 import com.example.sacco_core_banking.dto.workflow.WorkFlowInstanceDashboardResponse;
 import com.example.sacco_core_banking.dto.workflow.WorkFlowInstanceResponse;
+import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.entities.WorkFlowInstance;
+import com.example.sacco_core_banking.entities.WorkFlowStage;
 import com.example.sacco_core_banking.enums.WorkFlowInstanceStatus;
 import com.example.sacco_core_banking.enums.WorkFlowPriority;
+import com.example.sacco_core_banking.repositories.UserGroupMemberRepository;
+import com.example.sacco_core_banking.repositories.UserRoleRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowInstanceRepository;
+import com.example.sacco_core_banking.repositories.WorkFlowStageResponsibleUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +29,12 @@ public class WorkFlowInstanceService {
 
     @Autowired
     private WorkFlowInstanceRepository workFlowInstanceRepository;
+    @Autowired
+    private UserGroupMemberRepository userGroupMemberRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    @Autowired
+    private WorkFlowStageResponsibleUserRepository workFlowStageResponsibleUserRepository;
 
     private static final List<WorkFlowInstanceStatus> ACTIVE_STATUSES =
             List.of(WorkFlowInstanceStatus.INITIATED, WorkFlowInstanceStatus.IN_PROGRESS);
@@ -36,6 +47,34 @@ public class WorkFlowInstanceService {
 
     public WorkFlowInstanceResponse getInstanceById(UUID id) {
         return toResponse(findInstance(id));
+    }
+
+    /**
+     * The caller's In-Tray: active instances currently sitting where they're responsible to
+     * act — either explicitly assigned to them, or (when unassigned) matching the current
+     * stage's GROUP/ROLE/USERS/ANY responsibility rule. Once an instance is explicitly
+     * assigned to someone, it's exclusively theirs and drops out of the pool's view.
+     */
+    public List<WorkFlowInstanceResponse> listInTrayForUser(User user) {
+        return workFlowInstanceRepository.findByStatusIn(ACTIVE_STATUSES).stream()
+                .filter(instance -> isInTrayForUser(instance, user))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isInTrayForUser(WorkFlowInstance instance, User user) {
+        if (instance.getAssignedTo() != null) {
+            return instance.getAssignedTo().getId().equals(user.getId());
+        }
+        WorkFlowStage stage = instance.getCurrentStage();
+        return switch (stage.getResponsibleType()) {
+            case ANY -> true;
+            case GROUP -> stage.getResponsibleGroup() != null
+                    && userGroupMemberRepository.findByUserIdAndUserGroupId(user.getId(), stage.getResponsibleGroup().getId()).isPresent();
+            case ROLE -> stage.getResponsibleRole() != null
+                    && userRoleRepository.findByUserIdAndRoleId(user.getId(), stage.getResponsibleRole().getId()).isPresent();
+            case USERS -> workFlowStageResponsibleUserRepository.findByStageIdAndUserId(stage.getId(), user.getId()).isPresent();
+        };
     }
 
     public WorkFlowInstanceDashboardResponse getDashboard() {
@@ -70,6 +109,7 @@ public class WorkFlowInstanceService {
                 .referenceId(instance.getReferenceId())
                 .currentStageId(instance.getCurrentStage().getId())
                 .currentStageName(instance.getCurrentStage().getName())
+                .currentStageInterfaceKey(instance.getCurrentStage().getInterfaceKey())
                 .currentStatusId(instance.getCurrentStatus() != null ? instance.getCurrentStatus().getId() : null)
                 .currentStatusName(instance.getCurrentStatus() != null ? instance.getCurrentStatus().getName() : null)
                 .status(instance.getStatus().name())

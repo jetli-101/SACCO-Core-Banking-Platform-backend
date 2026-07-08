@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- A member's loan application — the first real business module wired to the workflow engine.
+         Its lifecycle status/stage live on the linked workflow_instance, not here. -->
+    <changeSet id="40" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_loans">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sacco_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_loans_sacco"
+                             references="smoothsurf_sacco_saccos(id)"/>
+            </column>
+            <column name="member_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_loans_member"
+                             references="smoothsurf_sacco_members(id)"/>
+            </column>
+            <column name="loan_type" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount_applied" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount_approved" type="DECIMAL(15,2)"/>
+            <column name="interest_rate" type="DECIMAL(5,2)"/>
+            <column name="repayment_period_months" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purpose" type="TEXT"/>
+            <column name="workflow_instance_id" type="UUID">
+                <constraints foreignKeyName="fk_loans_workflow_instance"
+                             references="smoothsurf_sacco_wf_instances(id)"/>
+            </column>
+            <column name="disbursed_amount" type="DECIMAL(15,2)"/>
+            <column name="disbursed_at" type="TIMESTAMPTZ"/>
+            <column name="applied_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

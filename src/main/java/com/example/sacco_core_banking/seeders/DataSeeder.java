@@ -77,6 +77,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         Sacco sacco = saccoRepository.findByRegistrationNumber(SACCO_CODE).orElseGet(this::seedSacco);
         User admin = seedAdmin(sacco);
+        seedAdminMemberProfile(sacco, admin);
         seedMember(sacco, admin, "Wanjiku", null, "Mwangi", "wanjiku.mwangi@smoothsurfsacco.co.ke",
                 "0712345671", "28456712", LocalDate.of(1988, 3, 14), Gender.FEMALE, "Teacher",
                 "A001234567B", "Kiambu Primary School", "Kiambu", "Kiambu", "Township",
@@ -178,6 +179,34 @@ public class DataSeeder implements CommandLineRunner {
 
         assignRole(user, memberRole);
 
+        createMemberProfile(sacco, user, admin, firstName, middleName, lastName, nationalId, dateOfBirth, gender,
+                occupation, kraPin, employer, county, constituency, ward, postalAddress, physicalAddress,
+                memberNumber, kinName, kinRelationship, kinPhone, kinIdNumber, kinAddress);
+    }
+
+    /** Attaches a Member profile (+ next of kin + auto-approval) to a User that already exists, so a staff account like admin can also act as a member (e.g. apply for a loan) without a second login. */
+    private void seedAdminMemberProfile(Sacco sacco, User admin) {
+        if (memberRepository.findByUserId(admin.getId()).isPresent()) {
+            return;
+        }
+
+        Role memberRole = roleRepository.findByName(RoleName.ROLE_MEMBER.name())
+                .orElseThrow(() -> new IllegalStateException("Roles have not been seeded yet"));
+        assignRole(admin, memberRole);
+
+        createMemberProfile(sacco, admin, admin, "System", null, "Administrator", "A000000000Z",
+                LocalDate.of(1990, 1, 1), Gender.MALE, "System Administrator", "A000000000Z",
+                "SmoothSurf Sacco", "Nairobi", "Nairobi Central", "CBD",
+                "P.O. Box 1, Nairobi", "CBD, Nairobi", "SS-0000",
+                "N/A", "N/A", "0700000000", "00000000", "N/A");
+    }
+
+    private void createMemberProfile(Sacco sacco, User user, User approver, String firstName, String middleName,
+            String lastName, String nationalId, LocalDate dateOfBirth, Gender gender, String occupation,
+            String kraPin, String employer, String county, String constituency, String ward, String postalAddress,
+            String physicalAddress, String memberNumber, String kinName, String kinRelationship, String kinPhone,
+            String kinIdNumber, String kinAddress) {
+
         Member member = new Member();
         member.setSacco(sacco);
         member.setUser(user);
@@ -209,7 +238,7 @@ public class DataSeeder implements CommandLineRunner {
 
         MemberApproval approval = new MemberApproval();
         approval.setMember(member);
-        approval.setApprovedBy(admin);
+        approval.setApprovedBy(approver);
         approval.setDecision(ApprovalDecision.APPROVED);
         approval.setComments("Seeded demo member — auto-approved");
         approval.setDecidedAt(OffsetDateTime.now());

@@ -23,6 +23,8 @@ public class WorkFlowInstanceResponse {
     private UUID referenceId;
     private UUID currentStageId;
     private String currentStageName;
+    /** WorkFlowStage.interfaceKey for the current stage — which action-panel component the frontend should render. */
+    private String currentStageInterfaceKey;
     private UUID currentStatusId;
     private String currentStatusName;
     private String status;

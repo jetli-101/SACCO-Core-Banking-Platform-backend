@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.example.sacco_core_banking.enums.StageResponsibleType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -38,7 +39,19 @@ public class WorkFlowStageRequest {
 
     private UUID defaultStatusId;
 
+    /**
+     * Explicit @JsonProperty because Lombok's boolean accessor for "isInitial" is
+     * isInitial()/setInitial() — Jackson's default bean-property naming strips the
+     * leading "is" from that pair and would otherwise wire this up as "initial", not
+     * "isInitial", silently dropping the field from every request that (correctly)
+     * sends "isInitial".
+     */
+    @JsonProperty("isInitial")
     private boolean isInitial;
 
+    @JsonProperty("isFinal")
     private boolean isFinal;
+
+    /** Key into the frontend's interface registry for this stage's action panel; null falls back to the generic one. */
+    private String interfaceKey;
 }

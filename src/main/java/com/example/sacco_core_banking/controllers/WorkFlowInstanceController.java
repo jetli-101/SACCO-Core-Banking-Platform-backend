@@ -7,6 +7,7 @@ import com.example.sacco_core_banking.classes.Constants;
 import com.example.sacco_core_banking.classes.CurrentUser;
 import com.example.sacco_core_banking.dto.ApiResponse;
 import com.example.sacco_core_banking.dto.workflow.AvailableTransitionResponse;
+import com.example.sacco_core_banking.dto.workflow.ReassignWorkFlowInstanceRequest;
 import com.example.sacco_core_banking.dto.workflow.StartWorkFlowRequest;
 import com.example.sacco_core_banking.dto.workflow.TransitionWorkFlowRequest;
 import com.example.sacco_core_banking.dto.workflow.WorkFlowInstanceDashboardResponse;
@@ -51,6 +52,12 @@ public class WorkFlowInstanceController {
         return ResponseEntity.ok(ApiResponse.success(workFlowInstanceService.listInstances(), "success"));
     }
 
+    @GetMapping("/in-tray")
+    @Operation(summary = "List the caller's In-Tray", description = "Active instances currently waiting for the caller to act, by direct assignment or stage responsibility.")
+    public ResponseEntity<ApiResponse<List<WorkFlowInstanceResponse>>> listInTray() {
+        return ResponseEntity.ok(ApiResponse.success(workFlowInstanceService.listInTrayForUser(currentUser.get()), "success"));
+    }
+
     @GetMapping("/dashboard")
     @Operation(summary = "Instance dashboard stats", description = "Active/high-priority/due-this-week/rejected counts.")
     public ResponseEntity<ApiResponse<WorkFlowInstanceDashboardResponse>> getDashboard() {
@@ -82,5 +89,13 @@ public class WorkFlowInstanceController {
             @PathVariable UUID id, @Valid @RequestBody TransitionWorkFlowRequest request) {
         WorkFlowInstanceResponse updated = workFlowEngineService.transition(id, request, currentUser.get());
         return ResponseEntity.ok(ApiResponse.success(updated, "Process transitioned successfully"));
+    }
+
+    @PostMapping("/{id}/reassign")
+    @Operation(summary = "Forward a process to another person", description = "Reassigns the instance to a specific user, same stage — distinct from a transition.")
+    public ResponseEntity<ApiResponse<WorkFlowInstanceResponse>> reassign(
+            @PathVariable UUID id, @Valid @RequestBody ReassignWorkFlowInstanceRequest request) {
+        WorkFlowInstanceResponse updated = workFlowEngineService.reassign(id, request, currentUser.get());
+        return ResponseEntity.ok(ApiResponse.success(updated, "Process forwarded successfully"));
     }
 }

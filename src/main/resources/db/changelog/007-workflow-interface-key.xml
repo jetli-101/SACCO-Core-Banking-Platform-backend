@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Key into the frontend's interface registry — identifies which action-panel component
+         renders in the In-Tray for an instance sitting at this stage. Null means no custom
+         interface registered, so the frontend falls back to the generic action panel. -->
+    <changeSet id="39" author="sacco-dev">
+        <addColumn tableName="smoothsurf_sacco_wf_stages">
+            <column name="interface_key" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
