@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.example.sacco_core_banking.classes.InvalidStateException;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
 import com.example.sacco_core_banking.dto.workflow.AvailableTransitionResponse;
+import com.example.sacco_core_banking.dto.workflow.ReassignWorkFlowInstanceRequest;
 import com.example.sacco_core_banking.dto.workflow.StartWorkFlowRequest;
 import com.example.sacco_core_banking.dto.workflow.TransitionWorkFlowRequest;
 import com.example.sacco_core_banking.dto.workflow.WorkFlowInstanceResponse;
@@ -184,6 +185,46 @@ public class WorkFlowEngineService {
         history.setPerformedBy(actor);
         history.setPerformedAt(OffsetDateTime.now());
         history.setDataSnapshot(new HashMap<>(mergedData));
+        workFlowInstanceHistoryRepository.save(history);
+
+        return workFlowInstanceService.toResponse(saved);
+    }
+
+    /**
+     * Forward-to-person: reassigns an instance to a specific user at its current stage —
+     * deliberately separate from transition(), since the stage/status don't change, only
+     * who's responsible for acting next. Anyone currently authorized to act on the stage
+     * (same rule as transition()) may forward it on.
+     */
+    public WorkFlowInstanceResponse reassign(UUID instanceId, ReassignWorkFlowInstanceRequest request, User actor) {
+        WorkFlowInstance instance = workFlowInstanceRepository.findById(instanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Process instance not found"));
+
+        if (instance.getStatus() == WorkFlowInstanceStatus.COMPLETED
+                || instance.getStatus() == WorkFlowInstanceStatus.REJECTED) {
+            throw new InvalidStateException("This process has already ended and cannot be forwarded");
+        }
+
+        WorkFlowStage currentStage = instance.getCurrentStage();
+        checkAuthorized(currentStage, actor);
+
+        User newAssignee = userRepository.findById(request.getAssignedToUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User to forward to not found"));
+
+        instance.setAssignedTo(newAssignee);
+        WorkFlowInstance saved = workFlowInstanceRepository.save(instance);
+
+        String comment = "Forwarded to " + newAssignee.getUsername()
+                + (request.getComment() != null && !request.getComment().isBlank() ? ": " + request.getComment() : "");
+
+        WorkFlowInstanceHistory history = new WorkFlowInstanceHistory();
+        history.setInstance(saved);
+        history.setFromStage(currentStage);
+        history.setToStage(currentStage);
+        history.setComment(comment);
+        history.setPerformedBy(actor);
+        history.setPerformedAt(OffsetDateTime.now());
+        history.setDataSnapshot(new HashMap<>(saved.getData()));
         workFlowInstanceHistoryRepository.save(history);
 
         return workFlowInstanceService.toResponse(saved);

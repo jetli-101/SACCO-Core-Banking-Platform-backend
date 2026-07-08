@@ -144,6 +144,7 @@ public class WorkFlowStageService {
         stage.setDefaultStatus(defaultStatus);
         stage.setInitial(request.isInitial());
         stage.setFinal(request.isFinal());
+        stage.setInterfaceKey(request.getInterfaceKey());
     }
 
     private void replaceResponsibleUsers(WorkFlowStage stage, WorkFlowStageRequest request) {
@@ -182,6 +183,7 @@ public class WorkFlowStageService {
                 .defaultStatusName(stage.getDefaultStatus() != null ? stage.getDefaultStatus().getName() : null)
                 .isInitial(stage.isInitial())
                 .isFinal(stage.isFinal())
+                .interfaceKey(stage.getInterfaceKey())
                 .build();
     }
 }

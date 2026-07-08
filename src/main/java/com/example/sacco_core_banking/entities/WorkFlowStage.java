@@ -73,4 +73,12 @@ public class WorkFlowStage extends BaseEntity {
 
     @Column(name = "is_final", nullable = false)
     private boolean isFinal;
+
+    /**
+     * Key into the frontend's interface registry — identifies which action-panel component
+     * to render for an instance sitting at this stage (e.g. "CLAIM_REVIEW"). Null means no
+     * custom interface is registered yet, so the frontend falls back to a generic action panel.
+     */
+    @Column(name = "interface_key")
+    private String interfaceKey;
 }

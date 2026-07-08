@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WorkFlowInstanceHistoryRepository extends JpaRepository<WorkFlowInstanceHistory, UUID> {
     List<WorkFlowInstanceHistory> findByInstanceIdOrderByPerformedAtAsc(UUID instanceId);
+
+    List<WorkFlowInstanceHistory> findByPerformedByIdOrderByPerformedAtDesc(UUID performedById);
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.example.sacco_core_banking.enums.StageResponsibleType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,6 +30,10 @@ public class WorkFlowStageResponse {
     private String stateName;
     private UUID defaultStatusId;
     private String defaultStatusName;
+    /** See WorkFlowStageRequest for why this needs an explicit @JsonProperty. */
+    @JsonProperty("isInitial")
     private boolean isInitial;
+    @JsonProperty("isFinal")
     private boolean isFinal;
+    private String interfaceKey;
 }

@@ -31,5 +31,8 @@
     <include file="db/changelog/004-invitation-flow.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/005-workflow-engine.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/006-workflow-engine-extensions.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/007-workflow-interface-key.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/008-loans.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/009-checklists.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

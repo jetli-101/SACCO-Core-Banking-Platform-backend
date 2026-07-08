@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- A reusable, standalone checklist (e.g. "Claims checklist") — independent of any one
+         stage/transition, unlike smoothsurf_sacco_wf_stage_actions. Linked to whichever
+         workflow stages need it via smoothsurf_sacco_checklist_stage_links below. -->
+    <changeSet id="41" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_checklists">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="42" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_checklist_items">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="checklist_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_checklist_items_checklist"
+                             references="smoothsurf_sacco_checklists(id)"/>
+            </column>
+            <column name="item_text" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="required" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="order_no" type="INT" defaultValueNumeric="0"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Many-to-many: a checklist can be linked to several stages (possibly across different
+         workflows), and a stage can carry several checklists. -->
+    <changeSet id="43" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_checklist_stage_links">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="checklist_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_checklist_stage_links_checklist"
+                             references="smoothsurf_sacco_checklists(id)"/>
+            </column>
+            <column name="stage_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_checklist_stage_links_stage"
+                             references="smoothsurf_sacco_wf_stages(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+        <addUniqueConstraint tableName="smoothsurf_sacco_checklist_stage_links"
+                              columnNames="checklist_id, stage_id"
+                              constraintName="uq_checklist_stage_links"/>
+    </changeSet>
+
+</databaseChangeLog>
