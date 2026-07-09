@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Admin-configurable metadata per LoanType (rate/limits/active toggle) — one row per
+         loan type, sitting alongside the existing loan_type enum column rather than
+         replacing it. -->
+    <changeSet id="50" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_loan_products">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="loan_type" type="VARCHAR(30)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="interest_rate" type="DECIMAL(5,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_amount" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_amount" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_term_months" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_term_months" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- A fellow member vouching for a loan application, pending their own accept/decline. -->
+    <changeSet id="51" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_loan_guarantors">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="loan_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_loan_guarantors_loan"
+                             references="smoothsurf_sacco_loans(id)"/>
+            </column>
+            <column name="member_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_loan_guarantors_member"
+                             references="smoothsurf_sacco_members(id)"/>
+            </column>
+            <column name="guaranteed_amount" type="DECIMAL(15,2)"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="responded_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Repayment transactions recorded by staff against a disbursed loan. -->
+    <changeSet id="52" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_loan_repayments">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="loan_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_loan_repayments_loan"
+                             references="smoothsurf_sacco_loans(id)"/>
+            </column>
+            <column name="amount" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="paid_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="method" type="VARCHAR(50)"/>
+            <column name="recorded_by_user_id" type="UUID">
+                <constraints foreignKeyName="fk_loan_repayments_recorded_by"
+                             references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

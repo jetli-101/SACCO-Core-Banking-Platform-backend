@@ -21,6 +21,7 @@ public interface Constants {
     String WORKFLOW_STATES_PATH = API_BASE_PATH + "/workflow-states";
     String WORKFLOW_STAGE_ACTIONS_PATH = API_BASE_PATH + "/workflow-stage-actions";
     String LOANS_PATH = API_BASE_PATH + "/loans";
+    String LOAN_PRODUCTS_PATH = API_BASE_PATH + "/loan-products";
     String CHECKLISTS_PATH = API_BASE_PATH + "/checklists";
 
     String TEXT_FIELD_REQUIRED = "Input is required for this field!";

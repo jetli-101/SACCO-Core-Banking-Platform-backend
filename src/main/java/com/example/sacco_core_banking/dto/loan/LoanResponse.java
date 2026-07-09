@@ -34,4 +34,12 @@ public class LoanResponse {
     private String status;
     private String currentStageName;
     private String priority;
+
+    /** The loan's own lifecycle (PENDING/ACTIVE/DEFAULTED/CLOSED/REJECTED) — distinct from
+     * `status` above, which only tracks the approval workflow. Computed at read time from
+     * disbursement + repayments, never stored. */
+    private String loanStatus;
+    private BigDecimal totalRepaid;
+    private BigDecimal outstandingBalance;
+    private OffsetDateTime nextDueDate;
 }
