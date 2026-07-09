@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.example.sacco_core_banking.classes.Constants;
 import com.example.sacco_core_banking.classes.CurrentUser;
 import com.example.sacco_core_banking.dto.ApiResponse;
+import com.example.sacco_core_banking.dto.loan.DisburseLoanRequest;
 import com.example.sacco_core_banking.dto.loan.LoanRequest;
 import com.example.sacco_core_banking.dto.loan.LoanResponse;
 import com.example.sacco_core_banking.services.LoanService;
@@ -59,5 +60,12 @@ public class LoanController {
     @Operation(summary = "Get a loan by id")
     public ResponseEntity<ApiResponse<LoanResponse>> getLoan(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(loanService.getLoanById(id), "success"));
+    }
+
+    @PostMapping("/{id}/disburse")
+    @PreAuthorize("hasAnyRole('LOAN_OFFICER','BRANCH_MANAGER','SYSTEM_ADMINISTRATOR')")
+    @Operation(summary = "Disburse an approved loan", description = "Records the disbursed amount and timestamp — a loan can only be disbursed once.")
+    public ResponseEntity<ApiResponse<LoanResponse>> disburse(@PathVariable UUID id, @Valid @RequestBody DisburseLoanRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(loanService.disburse(id, request), "Loan disbursed successfully"));
     }
 }
