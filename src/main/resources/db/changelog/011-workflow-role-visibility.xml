@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Extra roles (beyond ROLE_SYSTEM_ADMINISTRATOR, which always has full access) allowed
+         to view/configure a specific workflow. Empty for a workflow means admin-only, same
+         as before this table existed. -->
+    <changeSet id="53" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_wf_workflow_roles">
+            <column name="workflow_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_wf_workflow_roles_workflow" references="smoothsurf_sacco_wf_workflows(id)"/>
+            </column>
+            <column name="role_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_wf_workflow_roles_role" references="smoothsurf_sacco_roles(id)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="smoothsurf_sacco_wf_workflow_roles" columnNames="workflow_id, role_id" constraintName="pk_wf_workflow_roles"/>
+    </changeSet>
+
+</databaseChangeLog>

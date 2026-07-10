@@ -35,5 +35,6 @@
     <include file="db/changelog/008-loans.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/009-checklists.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/010-loan-products-guarantors-repayments.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/011-workflow-role-visibility.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

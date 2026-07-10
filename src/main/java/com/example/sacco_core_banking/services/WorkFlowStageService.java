@@ -21,7 +21,6 @@ import com.example.sacco_core_banking.enums.StageResponsibleType;
 import com.example.sacco_core_banking.repositories.RoleRepository;
 import com.example.sacco_core_banking.repositories.UserGroupRepository;
 import com.example.sacco_core_banking.repositories.UserRepository;
-import com.example.sacco_core_banking.repositories.WorkFlowRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowStageRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowStageResponsibleUserRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowStateRepository;
@@ -30,7 +29,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** CRUD for the stages of a workflow — powers the create wizard's Stage Structure step and the Edit Workflow "Stages" tab. */
+/**
+ * CRUD for the stages of a workflow — powers the create wizard's Stage Structure step and
+ * the Edit Workflow "Stages" tab. Every method checks access to the stage's parent workflow
+ * via WorkFlowService.assertCanAccess, so a role granted visibility on one workflow can't
+ * touch another's stages.
+ */
 @Service
 @Transactional
 public class WorkFlowStageService {
@@ -38,7 +42,7 @@ public class WorkFlowStageService {
     @Autowired
     private WorkFlowStageRepository workFlowStageRepository;
     @Autowired
-    private WorkFlowRepository workFlowRepository;
+    private WorkFlowService workFlowService;
     @Autowired
     private UserGroupRepository userGroupRepository;
     @Autowired
@@ -52,19 +56,22 @@ public class WorkFlowStageService {
     @Autowired
     private WorkFlowStageResponsibleUserRepository workFlowStageResponsibleUserRepository;
 
-    public List<WorkFlowStageResponse> listStages(UUID workFlowId) {
+    public List<WorkFlowStageResponse> listStages(UUID workFlowId, User caller) {
+        workFlowService.assertCanAccess(workFlowService.findWorkFlow(workFlowId), caller);
         return workFlowStageRepository.findByWorkFlowIdOrderByOrderNoAsc(workFlowId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public WorkFlowStageResponse getStageById(UUID id) {
-        return toResponse(findStage(id));
+    public WorkFlowStageResponse getStageById(UUID id, User caller) {
+        WorkFlowStage stage = findStage(id);
+        workFlowService.assertCanAccess(stage.getWorkFlow(), caller);
+        return toResponse(stage);
     }
 
-    public WorkFlowStageResponse createStage(WorkFlowStageRequest request) {
-        WorkFlow workFlow = workFlowRepository.findById(request.getWorkFlowId())
-                .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
+    public WorkFlowStageResponse createStage(WorkFlowStageRequest request, User caller) {
+        WorkFlow workFlow = workFlowService.findWorkFlow(request.getWorkFlowId());
+        workFlowService.assertCanAccess(workFlow, caller);
 
         WorkFlowStage stage = new WorkFlowStage();
         stage.setWorkFlow(workFlow);
@@ -76,8 +83,9 @@ public class WorkFlowStageService {
         return toResponse(saved);
     }
 
-    public WorkFlowStageResponse updateStage(UUID id, WorkFlowStageRequest request) {
+    public WorkFlowStageResponse updateStage(UUID id, WorkFlowStageRequest request, User caller) {
         WorkFlowStage stage = findStage(id);
+        workFlowService.assertCanAccess(stage.getWorkFlow(), caller);
         applyRequest(stage, request);
 
         WorkFlowStage saved = workFlowStageRepository.save(stage);
@@ -86,8 +94,9 @@ public class WorkFlowStageService {
         return toResponse(saved);
     }
 
-    public void deleteStage(UUID id) {
+    public void deleteStage(UUID id, User caller) {
         WorkFlowStage stage = findStage(id);
+        workFlowService.assertCanAccess(stage.getWorkFlow(), caller);
         workFlowStageResponsibleUserRepository.deleteByStageId(stage.getId());
         workFlowStageRepository.delete(stage);
     }

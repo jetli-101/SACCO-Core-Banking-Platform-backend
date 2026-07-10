@@ -8,11 +8,11 @@ import com.example.sacco_core_banking.classes.InvalidStateException;
 import com.example.sacco_core_banking.classes.ResourceNotFoundException;
 import com.example.sacco_core_banking.dto.workflow.WorkFlowTransitionRequest;
 import com.example.sacco_core_banking.dto.workflow.WorkFlowTransitionResponse;
+import com.example.sacco_core_banking.entities.User;
 import com.example.sacco_core_banking.entities.WorkFlow;
 import com.example.sacco_core_banking.entities.WorkFlowStage;
 import com.example.sacco_core_banking.entities.WorkFlowStatus;
 import com.example.sacco_core_banking.entities.WorkFlowTransition;
-import com.example.sacco_core_banking.repositories.WorkFlowRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowStageRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowStatusRepository;
 import com.example.sacco_core_banking.repositories.WorkFlowTransitionRepository;
@@ -20,7 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** CRUD for the transitions between a workflow's stages — powers the create wizard's Connect Components step and the Edit Workflow "Transitions" tab. */
+/**
+ * CRUD for the transitions between a workflow's stages — powers the create wizard's Connect
+ * Components step and the Edit Workflow "Transitions" tab. Every method checks access to the
+ * transition's parent workflow via WorkFlowService.assertCanAccess.
+ */
 @Service
 @Transactional
 public class WorkFlowTransitionService {
@@ -28,25 +32,28 @@ public class WorkFlowTransitionService {
     @Autowired
     private WorkFlowTransitionRepository workFlowTransitionRepository;
     @Autowired
-    private WorkFlowRepository workFlowRepository;
+    private WorkFlowService workFlowService;
     @Autowired
     private WorkFlowStageRepository workFlowStageRepository;
     @Autowired
     private WorkFlowStatusRepository workFlowStatusRepository;
 
-    public List<WorkFlowTransitionResponse> listTransitions(UUID workFlowId) {
+    public List<WorkFlowTransitionResponse> listTransitions(UUID workFlowId, User caller) {
+        workFlowService.assertCanAccess(workFlowService.findWorkFlow(workFlowId), caller);
         return workFlowTransitionRepository.findByWorkFlowId(workFlowId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public WorkFlowTransitionResponse getTransitionById(UUID id) {
-        return toResponse(findTransition(id));
+    public WorkFlowTransitionResponse getTransitionById(UUID id, User caller) {
+        WorkFlowTransition transition = findTransition(id);
+        workFlowService.assertCanAccess(transition.getWorkFlow(), caller);
+        return toResponse(transition);
     }
 
-    public WorkFlowTransitionResponse createTransition(WorkFlowTransitionRequest request) {
-        WorkFlow workFlow = workFlowRepository.findById(request.getWorkFlowId())
-                .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
+    public WorkFlowTransitionResponse createTransition(WorkFlowTransitionRequest request, User caller) {
+        WorkFlow workFlow = workFlowService.findWorkFlow(request.getWorkFlowId());
+        workFlowService.assertCanAccess(workFlow, caller);
         WorkFlowStage fromStage = findStage(workFlow.getId(), request.getFromStageId());
         WorkFlowStage toStage = findStage(workFlow.getId(), request.getToStageId());
 
@@ -59,8 +66,9 @@ public class WorkFlowTransitionService {
         return toResponse(workFlowTransitionRepository.save(transition));
     }
 
-    public WorkFlowTransitionResponse updateTransition(UUID id, WorkFlowTransitionRequest request) {
+    public WorkFlowTransitionResponse updateTransition(UUID id, WorkFlowTransitionRequest request, User caller) {
         WorkFlowTransition transition = findTransition(id);
+        workFlowService.assertCanAccess(transition.getWorkFlow(), caller);
         WorkFlowStage fromStage = findStage(transition.getWorkFlow().getId(), request.getFromStageId());
         WorkFlowStage toStage = findStage(transition.getWorkFlow().getId(), request.getToStageId());
 
@@ -71,8 +79,9 @@ public class WorkFlowTransitionService {
         return toResponse(workFlowTransitionRepository.save(transition));
     }
 
-    public void deleteTransition(UUID id) {
+    public void deleteTransition(UUID id, User caller) {
         WorkFlowTransition transition = findTransition(id);
+        workFlowService.assertCanAccess(transition.getWorkFlow(), caller);
         workFlowTransitionRepository.delete(transition);
     }
 

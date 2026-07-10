@@ -1,5 +1,8 @@
 package com.example.sacco_core_banking.dto.workflow;
 
+import java.util.List;
+import java.util.UUID;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -12,4 +15,7 @@ public class WorkFlowRequest {
     private String description;
 
     private boolean active = true;
+
+    /** Roles (beyond ROLE_SYSTEM_ADMINISTRATOR) allowed to view/configure this workflow. Empty/null means admin-only. */
+    private List<UUID> allowedRoleIds;
 }
