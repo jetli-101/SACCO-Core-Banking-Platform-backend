@@ -23,6 +23,8 @@ public interface Constants {
     String LOANS_PATH = API_BASE_PATH + "/loans";
     String LOAN_PRODUCTS_PATH = API_BASE_PATH + "/loan-products";
     String CHECKLISTS_PATH = API_BASE_PATH + "/checklists";
+    String SAVINGS_PATH = API_BASE_PATH + "/savings";
+    String SAVINGS_PRODUCTS_PATH = API_BASE_PATH + "/savings-products";
 
     String TEXT_FIELD_REQUIRED = "Input is required for this field!";
     String TEXT_FIELD_UNIQUE = "Input should be unique for this field!";
