@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Admin-configurable metadata per SavingsProductType (rate/minimum balances/withdrawability),
+         same one-row-per-type shape as smoothsurf_sacco_loan_products. SHARE_CAPITAL is modelled
+         here too rather than as a separate entity — it's a non-withdrawable savings balance. -->
+    <changeSet id="54" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_savings_products">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="savings_product_type" type="VARCHAR(30)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="interest_rate" type="DECIMAL(5,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minimum_opening_balance" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minimum_balance" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="withdrawable" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- A member's savings account against one product. Opens ACTIVE immediately — no workflow
+         engine involvement, unlike loans. -->
+    <changeSet id="55" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_savings_accounts">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sacco_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_savings_accounts_sacco"
+                             references="smoothsurf_sacco_saccos(id)"/>
+            </column>
+            <column name="member_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_savings_accounts_member"
+                             references="smoothsurf_sacco_members(id)"/>
+            </column>
+            <column name="savings_product_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_savings_accounts_product"
+                             references="smoothsurf_sacco_savings_products(id)"/>
+            </column>
+            <column name="account_number" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="balance" type="DECIMAL(15,2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="opened_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="closed_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Deposit/withdrawal transactions recorded by staff (typically a Teller) against an account. -->
+    <changeSet id="56" author="sacco-dev">
+        <createTable tableName="smoothsurf_sacco_savings_transactions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="savings_account_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_savings_transactions_account"
+                             references="smoothsurf_sacco_savings_accounts(id)"/>
+            </column>
+            <column name="type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance_after" type="DECIMAL(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="method" type="VARCHAR(50)"/>
+            <column name="narrative" type="TEXT"/>
+            <column name="transacted_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recorded_by_user_id" type="UUID">
+                <constraints foreignKeyName="fk_savings_transactions_recorded_by"
+                             references="smoothsurf_sacco_users(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
